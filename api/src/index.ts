@@ -4,6 +4,7 @@ import { authRoutes } from './routes/auth';
 import { accountRoutes } from './routes/accounts';
 import { groupRoutes } from './routes/groups';
 import { otpRoutes } from './routes/otp';
+import { webAuthnRoutes } from './routes/webauthn';
 import { initializeDatabase } from './models/db';
 
 // 定义环境变量类型
@@ -55,5 +56,6 @@ app.route('/api/auth', authRoutes);
 app.route('/api/accounts', accountRoutes);
 app.route('/api/groups', groupRoutes);
 app.route('/api/otp', otpRoutes);
+app.route('/api/webauthn', webAuthnRoutes);
 
 export default app;

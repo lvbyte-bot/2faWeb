@@ -27,8 +27,8 @@ test.describe('数据同步功能测试', () => {
     // 等待一段时间，确保登录请求有时间处理
     await page.waitForTimeout(3000);
 
-    // 等待导航到仪表盘
-    await page.waitForURL('http://localhost:3000/dashboard', { timeout: 30000 });
+    // 等待导航到仪表盘（根路径）
+    await page.waitForURL('http://localhost:3000/', { timeout: 30000 });
 
     console.log('已导航到仪表盘');
   });

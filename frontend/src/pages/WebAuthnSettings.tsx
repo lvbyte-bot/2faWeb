@@ -12,8 +12,10 @@ import {
   Loader,
   Center,
 } from '@mantine/core';
-import { IconFingerprint, IconAlertCircle, IconCheck, IconX } from '@tabler/icons-react';
+import { IconFingerprint, IconAlertCircle, IconCheck, IconX, IconList } from '@tabler/icons-react';
 import { useAuth } from '../contexts/AuthContext';
+import { Link } from 'react-router-dom';
+import WebAuthnGuide from '../components/WebAuthnGuide';
 
 export default function WebAuthnSettings() {
   const {
@@ -110,6 +112,15 @@ export default function WebAuthnSettings() {
             >
               注册新凭证
             </Button>
+
+            <Button
+              component={Link}
+              to="/webauthn/credentials"
+              leftSection={<IconList size={16} />}
+              variant="outline"
+            >
+              管理已注册凭证
+            </Button>
           </Stack>
         </Card>
       )}
@@ -118,6 +129,7 @@ export default function WebAuthnSettings() {
         icon={<IconAlertCircle size={16} />}
         title="安全提示"
         color="blue"
+        mb="lg"
       >
         <Text mb="xs">使用 WebAuthn 时请注意以下事项：</Text>
         <ul>
@@ -126,6 +138,9 @@ export default function WebAuthnSettings() {
           <li>建议同时注册多种登录方式，以防某种方式不可用</li>
         </ul>
       </Alert>
+
+      {/* 添加WebAuthn使用指南 */}
+      <WebAuthnGuide isRegistration={true} />
     </Container>
   );
 }

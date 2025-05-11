@@ -108,3 +108,77 @@ export async function isPlatformAuthenticatorAvailable(): Promise<boolean> {
     return false;
   }
 }
+
+/**
+ * WebAuthn凭证类型
+ */
+export interface WebAuthnCredential {
+  id: string;
+  credentialId: string;
+  createdAt: number;
+  lastUsed: number | null;
+  name: string;
+}
+
+/**
+ * 获取用户的WebAuthn凭证列表
+ * @returns 凭证列表
+ */
+export async function getCredentials(): Promise<WebAuthnCredential[]> {
+  try {
+    const response = await api.get('/webauthn/credentials');
+    const data = await response.json();
+
+    if (!data || response.status !== 200) {
+      throw new Error(data.error || '获取凭证列表失败');
+    }
+
+    return data.credentials;
+  } catch (error) {
+    console.error('获取WebAuthn凭证列表失败:', error);
+    throw error;
+  }
+}
+
+/**
+ * 更新WebAuthn凭证名称
+ * @param id 凭证ID
+ * @param name 新名称
+ * @returns 更新后的凭证
+ */
+export async function updateCredentialName(id: string, name: string): Promise<WebAuthnCredential> {
+  try {
+    const response = await api.put(`/webauthn/credentials/${id}/name`, { name });
+    const data = await response.json();
+
+    if (!data || response.status !== 200) {
+      throw new Error(data.error || '更新凭证名称失败');
+    }
+
+    return data.credential;
+  } catch (error) {
+    console.error('更新WebAuthn凭证名称失败:', error);
+    throw error;
+  }
+}
+
+/**
+ * 删除WebAuthn凭证
+ * @param id 凭证ID
+ * @returns 是否删除成功
+ */
+export async function deleteCredential(id: string): Promise<boolean> {
+  try {
+    const response = await api.delete_(`/webauthn/credentials/${id}`);
+    const data = await response.json();
+
+    if (!data || response.status !== 200) {
+      throw new Error(data.error || '删除凭证失败');
+    }
+
+    return true;
+  } catch (error) {
+    console.error('删除WebAuthn凭证失败:', error);
+    throw error;
+  }
+}

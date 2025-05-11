@@ -17,6 +17,7 @@ import {
 import { IconFingerprint, IconAlertCircle } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
 import { useAuth } from '../contexts/AuthContext';
+import WebAuthnGuide from '../components/WebAuthnGuide';
 
 interface LoginFormValues {
   username: string;
@@ -151,6 +152,13 @@ export default function Login() {
           </Alert>
         )}
       </Paper>
+
+      {/* 添加WebAuthn使用指南 */}
+      {isWebAuthnSupported && (
+        <Box mt="xl">
+          <WebAuthnGuide isRegistration={false} />
+        </Box>
+      )}
     </Container>
   );
 }

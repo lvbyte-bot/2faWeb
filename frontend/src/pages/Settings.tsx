@@ -16,7 +16,7 @@ import {
   Tabs,
   Anchor
 } from '@mantine/core';
-import { IconFingerprint } from '@tabler/icons-react';
+import { IconFingerprint, IconList } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
 import { useAuth } from '../contexts/AuthContext';
@@ -227,6 +227,17 @@ export default function Settings() {
                   leftSection={<IconFingerprint size={16} />}
                 >
                   设置生物识别登录
+                </Button>
+
+                <Button
+                  component={Link}
+                  to="/webauthn/credentials"
+                  variant="outline"
+                  fullWidth
+                  mb="md"
+                  leftSection={<IconList size={16} />}
+                >
+                  管理生物识别凭证
                 </Button>
               </div>
 

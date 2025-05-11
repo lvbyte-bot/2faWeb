@@ -61,6 +61,7 @@ export async function initializeDatabase(db: D1Database): Promise<void> {
         counter INTEGER NOT NULL DEFAULT 0,
         created_at INTEGER NOT NULL,
         last_used INTEGER,
+        name TEXT,
         FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
       )
     `).run();
@@ -129,13 +130,15 @@ export const webAuthnDb = {
     credential_id: string;
     public_key: string;
     counter: number;
+    name?: string;
   }): Promise<void> {
     const now = Date.now();
+    const name = credential.name || `凭证 ${credential.id.substring(0, 8)}`;
     await db.prepare(
-      `INSERT INTO webauthn_credentials (id, user_id, credential_id, public_key, counter, created_at)
-       VALUES (?, ?, ?, ?, ?, ?)`
+      `INSERT INTO webauthn_credentials (id, user_id, credential_id, public_key, counter, created_at, name)
+       VALUES (?, ?, ?, ?, ?, ?, ?)`
     )
-    .bind(credential.id, credential.user_id, credential.credential_id, credential.public_key, credential.counter, now)
+    .bind(credential.id, credential.user_id, credential.credential_id, credential.public_key, credential.counter, now, name)
     .run();
   },
 
@@ -158,6 +161,13 @@ export const webAuthnDb = {
     const now = Date.now();
     await db.prepare('UPDATE webauthn_credentials SET counter = ?, last_used = ? WHERE id = ?')
       .bind(counter, now, id)
+      .run();
+  },
+
+  // 更新凭证名称
+  async updateCredentialName(db: D1Database, id: string, name: string): Promise<void> {
+    await db.prepare('UPDATE webauthn_credentials SET name = ? WHERE id = ?')
+      .bind(name, id)
       .run();
   },
 

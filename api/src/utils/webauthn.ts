@@ -12,9 +12,9 @@ import type {
   VerifiedRegistrationResponse,
   VerifiedAuthenticationResponse,
 } from '@simplewebauthn/server';
-import type { 
-  RegistrationResponseJSON, 
-  AuthenticationResponseJSON 
+import type {
+  RegistrationResponseJSON,
+  AuthenticationResponseJSON
 } from '@simplewebauthn/types';
 
 // 应用的域名和来源
@@ -31,6 +31,7 @@ export interface WebAuthnCredential {
   counter: number;
   createdAt: number;
   lastUsed?: number;
+  name?: string;
 }
 
 /**

@@ -9,16 +9,16 @@ const API_BASE_URL = '/api';
  */
 export async function get(endpoint: string, options: RequestInit = {}) {
   const token = localStorage.getItem('token');
-  
+
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...options.headers,
   };
-  
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
+
   return fetch(`${API_BASE_URL}${endpoint}`, {
     method: 'GET',
     headers,
@@ -35,16 +35,16 @@ export async function get(endpoint: string, options: RequestInit = {}) {
  */
 export async function post(endpoint: string, data: any, options: RequestInit = {}) {
   const token = localStorage.getItem('token');
-  
+
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...options.headers,
   };
-  
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
+
   return fetch(`${API_BASE_URL}${endpoint}`, {
     method: 'POST',
     headers,
@@ -62,16 +62,16 @@ export async function post(endpoint: string, data: any, options: RequestInit = {
  */
 export async function put(endpoint: string, data: any, options: RequestInit = {}) {
   const token = localStorage.getItem('token');
-  
+
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...options.headers,
   };
-  
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
+
   return fetch(`${API_BASE_URL}${endpoint}`, {
     method: 'PUT',
     headers,
@@ -86,18 +86,18 @@ export async function put(endpoint: string, data: any, options: RequestInit = {}
  * @param options 请求选项
  * @returns 响应对象
  */
-export async function del(endpoint: string, options: RequestInit = {}) {
+export async function delete_(endpoint: string, options: RequestInit = {}) {
   const token = localStorage.getItem('token');
-  
+
   const headers: HeadersInit = {
     'Content-Type': 'application/json',
     ...options.headers,
   };
-  
+
   if (token) {
     headers['Authorization'] = `Bearer ${token}`;
   }
-  
+
   return fetch(`${API_BASE_URL}${endpoint}`, {
     method: 'DELETE',
     headers,

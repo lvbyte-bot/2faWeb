@@ -13,6 +13,7 @@ import AccountsManage from './pages/AccountsManage'
 import Settings from './pages/Settings'
 import ImportExport from './pages/ImportExport'
 import WebAuthnSettings from './pages/WebAuthnSettings'
+import WebAuthnCredentials from './pages/WebAuthnCredentials'
 
 // 上下文
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -107,6 +108,11 @@ function App() {
             <Route path="/webauthn" element={
               <ProtectedRoute>
                 <WebAuthnSettings />
+              </ProtectedRoute>
+            } />
+            <Route path="/webauthn/credentials" element={
+              <ProtectedRoute>
+                <WebAuthnCredentials />
               </ProtectedRoute>
             } />
             <Route path="*" element={<Navigate to="/" replace />} />
