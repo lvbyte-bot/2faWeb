@@ -1,0 +1,24 @@
+/* 全局样式 */
+#root {
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* 自定义样式 */
+.otp-code {
+  font-family: monospace;
+  letter-spacing: 0.2em;
+  font-weight: bold;
+}
+
+.countdown-critical {
+  color: #fa5252;
+}
+
+.countdown-warning {
+  color: #fd7e14;
+}
+
+.countdown-normal {
+  color: #228be6;
+}

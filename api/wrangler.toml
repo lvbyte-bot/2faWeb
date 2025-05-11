@@ -1,0 +1,15 @@
+name = "2fa-web-api"
+main = "src/index.ts"
+compatibility_date = "2023-12-01"
+
+[vars]
+JWT_SECRET = "change_this_in_production"
+
+[[d1_databases]]
+binding = "DB"
+database_name = "2fa_web_db"
+database_id = "placeholder"
+
+[[kv_namespaces]]
+binding = "SESSIONS"
+id = "placeholder"

@@ -1,0 +1,24 @@
+{
+  "name": "api",
+  "version": "1.0.0",
+  "description": "",
+  "main": "index.js",
+  "scripts": {
+    "dev": "wrangler dev src/index.ts",
+    "deploy": "wrangler deploy src/index.ts",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "devDependencies": {
+    "wrangler": "^4.14.4"
+  },
+  "dependencies": {
+    "@hono/zod-validator": "^0.5.0",
+    "hono": "^4.7.9",
+    "otpauth": "^9.4.0",
+    "zod": "^3.24.4"
+  }
+}
