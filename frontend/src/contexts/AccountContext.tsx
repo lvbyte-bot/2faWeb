@@ -1,6 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { notifications } from '@mantine/notifications';
-import { OTPAccount } from '../utils/otp';
+import type { OTPAccount } from '@/types';
 import * as accountService from '../services/accountService';
 
 // 账户上下文类型
@@ -61,23 +61,23 @@ export function AccountProvider({ children }: { children: ReactNode }) {
     try {
       const newAccount = await accountService.createAccount(account);
       setAccounts(prev => [...prev, newAccount]);
-      
+
       notifications.show({
         title: '创建成功',
         message: '账户已成功创建',
         color: 'green',
       });
-      
+
       return newAccount;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '创建账户失败';
-      
+
       notifications.show({
         title: '创建失败',
         message: errorMessage,
         color: 'red',
       });
-      
+
       throw err;
     }
   };
@@ -86,27 +86,27 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const updateAccount = async (id: string, accountUpdate: Partial<OTPAccount>) => {
     try {
       const updatedAccount = await accountService.updateAccount(id, accountUpdate);
-      
-      setAccounts(prev => 
+
+      setAccounts(prev =>
         prev.map(account => account.id === id ? updatedAccount : account)
       );
-      
+
       notifications.show({
         title: '更新成功',
         message: '账户已成功更新',
         color: 'green',
       });
-      
+
       return updatedAccount;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '更新账户失败';
-      
+
       notifications.show({
         title: '更新失败',
         message: errorMessage,
         color: 'red',
       });
-      
+
       throw err;
     }
   };
@@ -115,17 +115,17 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const deleteAccount = async (id: string) => {
     try {
       const success = await accountService.deleteAccount(id);
-      
+
       if (success) {
         setAccounts(prev => prev.filter(account => account.id !== id));
-        
+
         notifications.show({
           title: '删除成功',
           message: '账户已成功删除',
           color: 'green',
         });
       }
-      
+
       return success;
     } catch (err) {
       notifications.show({
@@ -133,7 +133,7 @@ export function AccountProvider({ children }: { children: ReactNode }) {
         message: '删除账户失败',
         color: 'red',
       });
-      
+
       return false;
     }
   };
@@ -142,25 +142,25 @@ export function AccountProvider({ children }: { children: ReactNode }) {
   const importAccounts = async (accountsToImport: Omit<OTPAccount, 'id'>[]) => {
     try {
       const importedAccounts = await accountService.importAccounts(accountsToImport);
-      
+
       setAccounts(prev => [...prev, ...importedAccounts]);
-      
+
       notifications.show({
         title: '导入成功',
         message: `成功导入 ${importedAccounts.length} 个账户`,
         color: 'green',
       });
-      
+
       return importedAccounts;
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '导入账户失败';
-      
+
       notifications.show({
         title: '导入失败',
         message: errorMessage,
         color: 'red',
       });
-      
+
       throw err;
     }
   };
@@ -171,13 +171,13 @@ export function AccountProvider({ children }: { children: ReactNode }) {
       return await accountService.exportAccounts();
     } catch (err) {
       const errorMessage = err instanceof Error ? err.message : '导出账户失败';
-      
+
       notifications.show({
         title: '导出失败',
         message: errorMessage,
         color: 'red',
       });
-      
+
       throw err;
     }
   };
@@ -206,10 +206,10 @@ export function AccountProvider({ children }: { children: ReactNode }) {
 // 使用账户上下文的钩子
 export function useAccounts() {
   const context = useContext(AccountContext);
-  
+
   if (context === undefined) {
     throw new Error('useAccounts must be used within an AccountProvider');
   }
-  
+
   return context;
 }

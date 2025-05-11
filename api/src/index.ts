@@ -4,6 +4,7 @@ import { authRoutes } from './routes/auth';
 import { accountRoutes } from './routes/accounts';
 import { groupRoutes } from './routes/groups';
 import { otpRoutes } from './routes/otp';
+import { initializeDatabase } from './models/db';
 
 // 定义环境变量类型
 type Bindings = {
@@ -23,6 +24,23 @@ app.use('*', cors({
   exposeHeaders: ['Content-Length'],
   maxAge: 600,
 }));
+
+// 初始化数据库
+let initialized = false;
+app.use('*', async (c, next) => {
+  try {
+    // 只在应用启动时初始化一次数据库
+    if (!initialized) {
+      await initializeDatabase(c.env.DB);
+      initialized = true;
+      console.log('数据库初始化完成');
+    }
+    await next();
+  } catch (error) {
+    console.error('初始化失败:', error);
+    return c.json({ error: '服务器初始化失败' }, 500);
+  }
+});
 
 // 健康检查路由
 app.get('/', (c) => {

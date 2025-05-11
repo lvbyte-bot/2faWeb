@@ -18,10 +18,9 @@ import {
   Popover,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
-import { notifications } from '@mantine/notifications';
 import { useAccounts } from '../contexts/AccountContext';
 import AccountForm from '../components/AccountForm';
-import { OTPAccount } from '../utils/otp';
+import type { OTPAccount } from '@/types';
 
 // 模拟分组数据
 const mockGroups = [

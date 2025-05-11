@@ -1,19 +1,5 @@
-import { TOTP, HOTP, Secret } from 'otpauth';
-
-// 账户类型定义
-export interface OTPAccount {
-  id: string;
-  name: string;
-  issuer: string;
-  secret: string;
-  type: 'TOTP' | 'HOTP';
-  algorithm: 'SHA1' | 'SHA256' | 'SHA512';
-  digits: number;
-  period?: number; // TOTP 特有
-  counter?: number; // HOTP 特有
-  icon?: string;
-  groupId?: string;
-}
+import { TOTP, HOTP, Secret, URI } from 'otpauth';
+import type { OTPAccount } from '@/types';
 
 // 创建 TOTP 实例
 export function createTOTP(account: OTPAccount) {
@@ -32,7 +18,7 @@ export function createHOTP(account: OTPAccount) {
   if (account.counter === undefined) {
     throw new Error('HOTP 账户必须提供计数器值');
   }
-  
+
   return new HOTP({
     issuer: account.issuer,
     label: account.name,
@@ -48,7 +34,7 @@ export function generateTOTP(account: OTPAccount): string {
   if (account.type !== 'TOTP') {
     throw new Error('账户类型必须是 TOTP');
   }
-  
+
   const totp = createTOTP(account);
   return totp.generate();
 }
@@ -58,7 +44,7 @@ export function generateHOTP(account: OTPAccount): string {
   if (account.type !== 'HOTP') {
     throw new Error('账户类型必须是 HOTP');
   }
-  
+
   const hotp = createHOTP(account);
   return hotp.generate();
 }
@@ -68,7 +54,7 @@ export function verifyTOTP(account: OTPAccount, token: string, window: number = 
   if (account.type !== 'TOTP') {
     throw new Error('账户类型必须是 TOTP');
   }
-  
+
   const totp = createTOTP(account);
   return totp.validate({ token, window }) !== null;
 }
@@ -78,7 +64,7 @@ export function verifyHOTP(account: OTPAccount, token: string, window: number = 
   if (account.type !== 'HOTP') {
     throw new Error('账户类型必须是 HOTP');
   }
-  
+
   const hotp = createHOTP(account);
   return hotp.validate({ token, window }) !== null;
 }
@@ -90,29 +76,27 @@ export function generateOTP(account: OTPAccount): string {
 
 // 验证 OTP 码（自动判断类型）
 export function verifyOTP(account: OTPAccount, token: string): boolean {
-  return account.type === 'TOTP' 
-    ? verifyTOTP(account, token) 
+  return account.type === 'TOTP'
+    ? verifyTOTP(account, token)
     : verifyHOTP(account, token);
 }
 
 // 解析 OTP URI
 export function parseOtpUri(uri: string): OTPAccount {
   try {
-    const otp = uri.startsWith('otpauth://totp/') 
-      ? TOTP.parse(uri) 
-      : HOTP.parse(uri);
-    
+    const otp = URI.parse(uri);
+
     // 提取标签和发行方
     let name = otp.label || '';
     let issuer = otp.issuer || '';
-    
+
     // 如果标签包含发行方（格式：issuer:name），则分离它们
     if (name.includes(':') && !issuer) {
       const parts = name.split(':');
       issuer = parts[0].trim();
       name = parts[1].trim();
     }
-    
+
     // 创建账户对象
     const account: OTPAccount = {
       id: crypto.randomUUID(),
@@ -123,16 +107,16 @@ export function parseOtpUri(uri: string): OTPAccount {
       algorithm: otp.algorithm as 'SHA1' | 'SHA256' | 'SHA512',
       digits: otp.digits,
     };
-    
+
     // 添加特定类型的属性
     if (otp instanceof TOTP) {
       account.period = otp.period;
     } else if (otp instanceof HOTP) {
       account.counter = otp.counter;
     }
-    
+
     return account;
-  } catch (error) {
+  } catch (error: any) {
     throw new Error(`解析 OTP URI 失败: ${error.message}`);
   }
 }

@@ -1,11 +1,11 @@
 import { useState } from 'react';
-import { 
-  TextInput, 
-  Select, 
-  NumberInput, 
-  Button, 
-  Group, 
-  Stack, 
+import {
+  TextInput,
+  Select,
+  NumberInput,
+  Button,
+  Group,
+  Stack,
   Paper,
   Text,
   Divider,
@@ -17,7 +17,8 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { QRCodeSVG } from 'qrcode.react';
-import { OTPAccount, generateRandomSecret, generateOtpUri } from '../utils/otp';
+import type { OTPAccount } from '@/types';
+import { generateRandomSecret, generateOtpUri, parseOtpUri } from '../utils/otp';
 import QRCodeScanner from './QRCodeScanner';
 
 interface AccountFormProps {
@@ -38,7 +39,7 @@ export default function AccountForm({
   const [showScanner, setShowScanner] = useState(false);
   const [showQRCode, setShowQRCode] = useState(false);
   const [qrCodeUri, setQrCodeUri] = useState<string>('');
-  
+
   // 表单初始值
   const defaultValues: Omit<OTPAccount, 'id'> = {
     name: '',
@@ -50,7 +51,7 @@ export default function AccountForm({
     period: 30,
     ...initialValues,
   };
-  
+
   // 创建表单
   const form = useForm<Omit<OTPAccount, 'id'>>({
     initialValues: defaultValues,
@@ -60,7 +61,7 @@ export default function AccountForm({
       secret: (value) => (value.length < 16 ? '密钥长度不足' : null),
     },
   });
-  
+
   // 处理表单提交
   const handleSubmit = (values: Omit<OTPAccount, 'id'>) => {
     // 根据类型处理特定字段
@@ -75,16 +76,16 @@ export default function AccountForm({
       // 移除 period 字段
       delete values.period;
     }
-    
+
     onSubmit(values);
   };
-  
+
   // 处理二维码扫描
   const handleScan = (uri: string) => {
     try {
       // 解析 OTP URI
-      const account = require('../utils/otp').parseOtpUri(uri);
-      
+      const account = parseOtpUri(uri);
+
       // 更新表单值
       form.setValues({
         name: account.name,
@@ -96,14 +97,14 @@ export default function AccountForm({
         period: account.period,
         counter: account.counter,
       });
-      
+
       // 关闭扫描器
       setShowScanner(false);
     } catch (error) {
       console.error('解析 OTP URI 失败:', error);
     }
   };
-  
+
   // 生成 QR 码
   const generateQRCode = () => {
     try {
@@ -112,25 +113,25 @@ export default function AccountForm({
         id: 'temp',
         ...form.values,
       };
-      
+
       // 生成 OTP URI
       const uri = generateOtpUri(tempAccount);
-      
+
       // 设置 QR 码 URI
       setQrCodeUri(uri);
-      
+
       // 显示 QR 码
       setShowQRCode(true);
     } catch (error) {
       console.error('生成 QR 码失败:', error);
     }
   };
-  
+
   return (
     <>
       <Paper p="md" radius="md" withBorder>
         <Text fw={500} size="lg" mb="md">{title}</Text>
-        
+
         <form onSubmit={form.onSubmit(handleSubmit)}>
           <Stack>
             <Group grow>
@@ -140,7 +141,7 @@ export default function AccountForm({
                 required
                 {...form.getInputProps('name')}
               />
-              
+
               <TextInput
                 label="发行方"
                 placeholder="例如：Google"
@@ -148,7 +149,7 @@ export default function AccountForm({
                 {...form.getInputProps('issuer')}
               />
             </Group>
-            
+
             <Group align="flex-end">
               <PasswordInput
                 label="密钥"
@@ -157,7 +158,7 @@ export default function AccountForm({
                 style={{ flex: 1 }}
                 {...form.getInputProps('secret')}
               />
-              
+
               <CopyButton value={form.values.secret}>
                 {({ copied, copy }) => (
                   <Tooltip label={copied ? '已复制' : '复制密钥'}>
@@ -167,14 +168,14 @@ export default function AccountForm({
                   </Tooltip>
                 )}
               </CopyButton>
-              
+
               <Button variant="outline" onClick={() => form.setFieldValue('secret', generateRandomSecret())}>
                 生成新密钥
               </Button>
             </Group>
-            
+
             <Divider label="高级设置" labelPosition="center" />
-            
+
             <Group grow>
               <Select
                 label="类型"
@@ -184,7 +185,7 @@ export default function AccountForm({
                 ]}
                 {...form.getInputProps('type')}
               />
-              
+
               <Select
                 label="算法"
                 data={[
@@ -195,7 +196,7 @@ export default function AccountForm({
                 {...form.getInputProps('algorithm')}
               />
             </Group>
-            
+
             <Group grow>
               <Select
                 label="位数"
@@ -206,7 +207,7 @@ export default function AccountForm({
                 {...form.getInputProps('digits')}
                 onChange={(value) => form.setFieldValue('digits', Number(value))}
               />
-              
+
               {form.values.type === 'TOTP' ? (
                 <NumberInput
                   label="周期（秒）"
@@ -222,7 +223,7 @@ export default function AccountForm({
                 />
               )}
             </Group>
-            
+
             {groups.length > 0 && (
               <Select
                 label="分组"
@@ -232,24 +233,24 @@ export default function AccountForm({
                 {...form.getInputProps('groupId')}
               />
             )}
-            
+
             <Divider />
-            
+
             <Group justify="space-between">
               <Button variant="outline" onClick={() => setShowScanner(true)}>
                 扫描二维码
               </Button>
-              
+
               <Button variant="outline" onClick={generateQRCode}>
                 生成二维码
               </Button>
             </Group>
-            
+
             <Group justify="flex-end">
               <Button variant="subtle" onClick={onCancel}>
                 取消
               </Button>
-              
+
               <Button type="submit">
                 保存
               </Button>
@@ -257,7 +258,7 @@ export default function AccountForm({
           </Stack>
         </form>
       </Paper>
-      
+
       {/* 二维码扫描模态框 */}
       <Modal
         opened={showScanner}
@@ -271,7 +272,7 @@ export default function AccountForm({
           onClose={() => setShowScanner(false)}
         />
       </Modal>
-      
+
       {/* 二维码显示模态框 */}
       <Modal
         opened={showQRCode}
@@ -282,7 +283,7 @@ export default function AccountForm({
       >
         <Stack align="center">
           <Text>使用其他 2FA 应用扫描此二维码</Text>
-          
+
           <div style={{ background: 'white', padding: '16px', borderRadius: '8px' }}>
             <QRCodeSVG
               value={qrCodeUri}
@@ -291,11 +292,11 @@ export default function AccountForm({
               includeMargin
             />
           </div>
-          
+
           <Text size="xs" c="dimmed" ta="center">
             {qrCodeUri}
           </Text>
-          
+
           <Button onClick={() => setShowQRCode(false)}>
             关闭
           </Button>

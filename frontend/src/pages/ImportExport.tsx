@@ -19,7 +19,8 @@ import {
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useAccounts } from '../contexts/AccountContext';
-import { OTPAccount, parseOtpUri } from '../utils/otp';
+import type { OTPAccount } from '@/types';
+import { parseOtpUri } from '../utils/otp';
 
 export default function ImportExport() {
   const { importAccounts, exportAccounts, loading } = useAccounts();

@@ -15,7 +15,7 @@ import { useAuth } from '../contexts/AuthContext';
 import { useAccounts } from '../contexts/AccountContext';
 import OTPDisplay from '../components/OTPDisplay';
 import AccountForm from '../components/AccountForm';
-import { OTPAccount } from '../utils/otp';
+import type { OTPAccount } from '../types';
 
 export default function Dashboard() {
   const { user } = useAuth();
@@ -69,7 +69,7 @@ export default function Dashboard() {
         </Center>
       ) : error ? (
         <Card withBorder p="xl" radius="md">
-          <Text ta="center" fw={500} mb="md" color="red">
+          <Text ta="center" fw={500} mb="md" c="red">
             加载账户时出错
           </Text>
           <Text ta="center" c="dimmed">

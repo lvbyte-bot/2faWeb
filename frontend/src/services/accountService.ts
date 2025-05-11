@@ -1,4 +1,4 @@
-import { OTPAccount } from '../utils/otp';
+import type { OTPAccount } from '@/types';
 
 // API 基础 URL
 const API_BASE_URL = '/api';
@@ -29,12 +29,12 @@ export async function getAllAccounts(): Promise<OTPAccount[]> {
     if (localAccounts) {
       return JSON.parse(localAccounts);
     }
-    
+
     // 如果没有本地存储，则从 API 获取
     const response = await fetch(`${API_BASE_URL}/accounts`, {
       headers: getAuthHeaders(),
     });
-    
+
     return handleResponse<OTPAccount[]>(response);
   } catch (error) {
     console.error('获取账户失败:', error);
@@ -52,12 +52,12 @@ export async function getAccount(id: string): Promise<OTPAccount | null> {
       const accounts = JSON.parse(localAccounts) as OTPAccount[];
       return accounts.find(account => account.id === id) || null;
     }
-    
+
     // 如果没有本地存储，则从 API 获取
     const response = await fetch(`${API_BASE_URL}/accounts/${id}`, {
       headers: getAuthHeaders(),
     });
-    
+
     return handleResponse<OTPAccount>(response);
   } catch (error) {
     console.error(`获取账户 ${id} 失败:`, error);
@@ -76,20 +76,20 @@ export async function createAccount(account: Omit<OTPAccount, 'id'>): Promise<OT
         ...account,
         id: crypto.randomUUID(),
       };
-      
+
       const updatedAccounts = [...accounts, newAccount];
       localStorage.setItem('accounts', JSON.stringify(updatedAccounts));
-      
+
       return newAccount;
     }
-    
+
     // 如果没有本地存储，则调用 API
     const response = await fetch(`${API_BASE_URL}/accounts`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(account),
     });
-    
+
     return handleResponse<OTPAccount>(response);
   } catch (error) {
     console.error('创建账户失败:', error);
@@ -105,29 +105,29 @@ export async function updateAccount(id: string, account: Partial<OTPAccount>): P
     if (localAccounts) {
       const accounts = JSON.parse(localAccounts) as OTPAccount[];
       const accountIndex = accounts.findIndex(a => a.id === id);
-      
+
       if (accountIndex === -1) {
         throw new Error(`账户 ${id} 不存在`);
       }
-      
+
       const updatedAccount = {
         ...accounts[accountIndex],
         ...account,
       };
-      
+
       accounts[accountIndex] = updatedAccount;
       localStorage.setItem('accounts', JSON.stringify(accounts));
-      
+
       return updatedAccount;
     }
-    
+
     // 如果没有本地存储，则调用 API
     const response = await fetch(`${API_BASE_URL}/accounts/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(account),
     });
-    
+
     return handleResponse<OTPAccount>(response);
   } catch (error) {
     console.error(`更新账户 ${id} 失败:`, error);
@@ -143,17 +143,17 @@ export async function deleteAccount(id: string): Promise<boolean> {
     if (localAccounts) {
       const accounts = JSON.parse(localAccounts) as OTPAccount[];
       const updatedAccounts = accounts.filter(account => account.id !== id);
-      
+
       localStorage.setItem('accounts', JSON.stringify(updatedAccounts));
       return true;
     }
-    
+
     // 如果没有本地存储，则调用 API
     const response = await fetch(`${API_BASE_URL}/accounts/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
     });
-    
+
     return response.ok;
   } catch (error) {
     console.error(`删除账户 ${id} 失败:`, error);
@@ -168,25 +168,25 @@ export async function importAccounts(accounts: Omit<OTPAccount, 'id'>[]): Promis
     const localAccounts = localStorage.getItem('accounts');
     if (localAccounts) {
       const existingAccounts = JSON.parse(localAccounts) as OTPAccount[];
-      
+
       const newAccounts = accounts.map(account => ({
         ...account,
         id: crypto.randomUUID(),
       }));
-      
+
       const updatedAccounts = [...existingAccounts, ...newAccounts];
       localStorage.setItem('accounts', JSON.stringify(updatedAccounts));
-      
+
       return newAccounts;
     }
-    
+
     // 如果没有本地存储，则调用 API
     const response = await fetch(`${API_BASE_URL}/accounts/import`, {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify({ accounts }),
     });
-    
+
     return handleResponse<OTPAccount[]>(response);
   } catch (error) {
     console.error('导入账户失败:', error);
@@ -202,12 +202,12 @@ export async function exportAccounts(): Promise<OTPAccount[]> {
     if (localAccounts) {
       return JSON.parse(localAccounts);
     }
-    
+
     // 如果没有本地存储，则从 API 获取
     const response = await fetch(`${API_BASE_URL}/accounts/export`, {
       headers: getAuthHeaders(),
     });
-    
+
     return handleResponse<OTPAccount[]>(response);
   } catch (error) {
     console.error('导出账户失败:', error);
