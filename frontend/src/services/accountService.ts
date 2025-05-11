@@ -6,9 +6,12 @@ const API_BASE_URL = '/api';
 // 获取认证头
 function getAuthHeaders(): HeadersInit {
   const token = localStorage.getItem('token');
+  if (!token) {
+    throw new Error('未授权：缺少认证令牌');
+  }
   return {
     'Content-Type': 'application/json',
-    'Authorization': token ? `Bearer ${token}` : '',
+    'Authorization': `Bearer ${token}`,
   };
 }
 
@@ -16,7 +19,7 @@ function getAuthHeaders(): HeadersInit {
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
     const errorData = await response.json().catch(() => ({}));
-    throw new Error(errorData.message || `API 请求失败: ${response.status}`);
+    throw new Error(errorData.error || errorData.message || `API 请求失败: ${response.status}`);
   }
   return response.json();
 }
@@ -24,13 +27,6 @@ async function handleResponse<T>(response: Response): Promise<T> {
 // 获取所有账户
 export async function getAllAccounts(): Promise<OTPAccount[]> {
   try {
-    // 检查是否有本地存储的账户（用于开发阶段）
-    const localAccounts = localStorage.getItem('accounts');
-    if (localAccounts) {
-      return JSON.parse(localAccounts);
-    }
-
-    // 如果没有本地存储，则从 API 获取
     const response = await fetch(`${API_BASE_URL}/accounts`, {
       headers: getAuthHeaders(),
     });
@@ -46,14 +42,6 @@ export async function getAllAccounts(): Promise<OTPAccount[]> {
 // 获取单个账户
 export async function getAccount(id: string): Promise<OTPAccount | null> {
   try {
-    // 检查是否有本地存储的账户
-    const localAccounts = localStorage.getItem('accounts');
-    if (localAccounts) {
-      const accounts = JSON.parse(localAccounts) as OTPAccount[];
-      return accounts.find(account => account.id === id) || null;
-    }
-
-    // 如果没有本地存储，则从 API 获取
     const response = await fetch(`${API_BASE_URL}/accounts/${id}`, {
       headers: getAuthHeaders(),
     });
@@ -68,22 +56,6 @@ export async function getAccount(id: string): Promise<OTPAccount | null> {
 // 创建账户
 export async function createAccount(account: Omit<OTPAccount, 'id'>): Promise<OTPAccount> {
   try {
-    // 检查是否有本地存储的账户
-    const localAccounts = localStorage.getItem('accounts');
-    if (localAccounts) {
-      const accounts = JSON.parse(localAccounts) as OTPAccount[];
-      const newAccount = {
-        ...account,
-        id: crypto.randomUUID(),
-      };
-
-      const updatedAccounts = [...accounts, newAccount];
-      localStorage.setItem('accounts', JSON.stringify(updatedAccounts));
-
-      return newAccount;
-    }
-
-    // 如果没有本地存储，则调用 API
     const response = await fetch(`${API_BASE_URL}/accounts`, {
       method: 'POST',
       headers: getAuthHeaders(),
@@ -100,28 +72,6 @@ export async function createAccount(account: Omit<OTPAccount, 'id'>): Promise<OT
 // 更新账户
 export async function updateAccount(id: string, account: Partial<OTPAccount>): Promise<OTPAccount> {
   try {
-    // 检查是否有本地存储的账户
-    const localAccounts = localStorage.getItem('accounts');
-    if (localAccounts) {
-      const accounts = JSON.parse(localAccounts) as OTPAccount[];
-      const accountIndex = accounts.findIndex(a => a.id === id);
-
-      if (accountIndex === -1) {
-        throw new Error(`账户 ${id} 不存在`);
-      }
-
-      const updatedAccount = {
-        ...accounts[accountIndex],
-        ...account,
-      };
-
-      accounts[accountIndex] = updatedAccount;
-      localStorage.setItem('accounts', JSON.stringify(accounts));
-
-      return updatedAccount;
-    }
-
-    // 如果没有本地存储，则调用 API
     const response = await fetch(`${API_BASE_URL}/accounts/${id}`, {
       method: 'PUT',
       headers: getAuthHeaders(),
@@ -138,17 +88,6 @@ export async function updateAccount(id: string, account: Partial<OTPAccount>): P
 // 删除账户
 export async function deleteAccount(id: string): Promise<boolean> {
   try {
-    // 检查是否有本地存储的账户
-    const localAccounts = localStorage.getItem('accounts');
-    if (localAccounts) {
-      const accounts = JSON.parse(localAccounts) as OTPAccount[];
-      const updatedAccounts = accounts.filter(account => account.id !== id);
-
-      localStorage.setItem('accounts', JSON.stringify(updatedAccounts));
-      return true;
-    }
-
-    // 如果没有本地存储，则调用 API
     const response = await fetch(`${API_BASE_URL}/accounts/${id}`, {
       method: 'DELETE',
       headers: getAuthHeaders(),
@@ -164,23 +103,6 @@ export async function deleteAccount(id: string): Promise<boolean> {
 // 批量导入账户
 export async function importAccounts(accounts: Omit<OTPAccount, 'id'>[]): Promise<OTPAccount[]> {
   try {
-    // 检查是否有本地存储的账户
-    const localAccounts = localStorage.getItem('accounts');
-    if (localAccounts) {
-      const existingAccounts = JSON.parse(localAccounts) as OTPAccount[];
-
-      const newAccounts = accounts.map(account => ({
-        ...account,
-        id: crypto.randomUUID(),
-      }));
-
-      const updatedAccounts = [...existingAccounts, ...newAccounts];
-      localStorage.setItem('accounts', JSON.stringify(updatedAccounts));
-
-      return newAccounts;
-    }
-
-    // 如果没有本地存储，则调用 API
     const response = await fetch(`${API_BASE_URL}/accounts/import`, {
       method: 'POST',
       headers: getAuthHeaders(),
@@ -197,13 +119,6 @@ export async function importAccounts(accounts: Omit<OTPAccount, 'id'>[]): Promis
 // 导出账户
 export async function exportAccounts(): Promise<OTPAccount[]> {
   try {
-    // 检查是否有本地存储的账户
-    const localAccounts = localStorage.getItem('accounts');
-    if (localAccounts) {
-      return JSON.parse(localAccounts);
-    }
-
-    // 如果没有本地存储，则从 API 获取
     const response = await fetch(`${API_BASE_URL}/accounts/export`, {
       headers: getAuthHeaders(),
     });
