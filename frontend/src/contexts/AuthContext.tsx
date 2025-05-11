@@ -1,5 +1,6 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { notifications } from '@mantine/notifications';
+import * as webAuthnService from '../services/webAuthnService';
 
 // API 基础 URL
 const API_BASE_URL = '/api';
@@ -15,9 +16,13 @@ interface User {
 interface AuthContextType {
   user: User | null;
   isAuthenticated: boolean;
+  isWebAuthnSupported: boolean;
+  isPlatformAuthenticatorAvailable: boolean;
   login: (username: string, password: string) => Promise<boolean>;
   register: (username: string, email: string, password: string) => Promise<boolean>;
   logout: () => void;
+  registerWebAuthn: (username: string) => Promise<boolean>;
+  loginWithWebAuthn: (username?: string) => Promise<boolean>;
 }
 
 // 创建认证上下文
@@ -28,6 +33,25 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [isWebAuthnSupported, setIsWebAuthnSupported] = useState<boolean>(false);
+  const [isPlatformAuthenticatorAvailable, setIsPlatformAuthenticatorAvailable] = useState<boolean>(false);
+
+  // 检查WebAuthn支持
+  useEffect(() => {
+    // 检查浏览器是否支持WebAuthn
+    const webAuthnSupported = webAuthnService.isWebAuthnSupported();
+    setIsWebAuthnSupported(webAuthnSupported);
+
+    // 检查是否支持平台认证器
+    if (webAuthnSupported) {
+      webAuthnService.isPlatformAuthenticatorAvailable()
+        .then(available => setIsPlatformAuthenticatorAvailable(available))
+        .catch(error => {
+          console.error('检查平台认证器可用性失败:', error);
+          setIsPlatformAuthenticatorAvailable(false);
+        });
+    }
+  }, []);
 
   // 检查本地存储中的认证状态
   useEffect(() => {
@@ -197,13 +221,85 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
+  // WebAuthn注册函数
+  const registerWebAuthn = async (username: string): Promise<boolean> => {
+    try {
+      if (!isWebAuthnSupported) {
+        throw new Error('您的浏览器不支持WebAuthn');
+      }
+
+      // 调用WebAuthn注册服务
+      await webAuthnService.registerWebAuthn(username);
+
+      notifications.show({
+        title: 'WebAuthn注册成功',
+        message: '您现在可以使用生物识别或安全密钥登录',
+        color: 'green',
+      });
+
+      return true;
+    } catch (error) {
+      console.error('WebAuthn registration failed:', error);
+
+      notifications.show({
+        title: 'WebAuthn注册失败',
+        message: error instanceof Error ? error.message : 'WebAuthn注册过程中出现错误',
+        color: 'red',
+      });
+
+      return false;
+    }
+  };
+
+  // WebAuthn登录函数
+  const loginWithWebAuthn = async (username?: string): Promise<boolean> => {
+    try {
+      if (!isWebAuthnSupported) {
+        throw new Error('您的浏览器不支持WebAuthn');
+      }
+
+      // 调用WebAuthn登录服务
+      const data = await webAuthnService.loginWithWebAuthn(username);
+
+      // 存储用户信息和令牌
+      localStorage.setItem('user', JSON.stringify(data.user));
+      localStorage.setItem('token', data.token);
+
+      // 更新状态
+      setUser(data.user);
+      setIsAuthenticated(true);
+
+      notifications.show({
+        title: 'WebAuthn登录成功',
+        message: `欢迎回来，${data.user.username}！`,
+        color: 'green',
+      });
+
+      return true;
+    } catch (error) {
+      console.error('WebAuthn login failed:', error);
+
+      notifications.show({
+        title: 'WebAuthn登录失败',
+        message: error instanceof Error ? error.message : 'WebAuthn登录过程中出现错误',
+        color: 'red',
+      });
+
+      return false;
+    }
+  };
+
   // 提供上下文值
   const contextValue: AuthContextType = {
     user,
     isAuthenticated,
+    isWebAuthnSupported,
+    isPlatformAuthenticatorAvailable,
     login,
     register,
     logout,
+    registerWebAuthn,
+    loginWithWebAuthn,
   };
 
   return (

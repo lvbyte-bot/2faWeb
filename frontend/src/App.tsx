@@ -12,6 +12,7 @@ import Register from './pages/Register'
 import AccountsManage from './pages/AccountsManage'
 import Settings from './pages/Settings'
 import ImportExport from './pages/ImportExport'
+import WebAuthnSettings from './pages/WebAuthnSettings'
 
 // 上下文
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -101,6 +102,11 @@ function App() {
             <Route path="/import-export" element={
               <ProtectedRoute>
                 <ImportExport />
+              </ProtectedRoute>
+            } />
+            <Route path="/webauthn" element={
+              <ProtectedRoute>
+                <WebAuthnSettings />
               </ProtectedRoute>
             } />
             <Route path="*" element={<Navigate to="/" replace />} />

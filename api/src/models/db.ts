@@ -120,6 +120,55 @@ export const userDb = {
   }
 };
 
+// WebAuthn凭证相关数据库操作
+export const webAuthnDb = {
+  // 创建WebAuthn凭证
+  async createCredential(db: D1Database, credential: {
+    id: string;
+    user_id: string;
+    credential_id: string;
+    public_key: string;
+    counter: number;
+  }): Promise<void> {
+    const now = Date.now();
+    await db.prepare(
+      `INSERT INTO webauthn_credentials (id, user_id, credential_id, public_key, counter, created_at)
+       VALUES (?, ?, ?, ?, ?, ?)`
+    )
+    .bind(credential.id, credential.user_id, credential.credential_id, credential.public_key, credential.counter, now)
+    .run();
+  },
+
+  // 获取用户的所有WebAuthn凭证
+  async getCredentialsByUserId(db: D1Database, userId: string) {
+    return await db.prepare('SELECT * FROM webauthn_credentials WHERE user_id = ?')
+      .bind(userId)
+      .all();
+  },
+
+  // 根据凭证ID获取凭证
+  async getCredentialByCredentialId(db: D1Database, credentialId: string) {
+    return await db.prepare('SELECT * FROM webauthn_credentials WHERE credential_id = ?')
+      .bind(credentialId)
+      .first();
+  },
+
+  // 更新凭证计数器和最后使用时间
+  async updateCredentialCounter(db: D1Database, id: string, counter: number): Promise<void> {
+    const now = Date.now();
+    await db.prepare('UPDATE webauthn_credentials SET counter = ?, last_used = ? WHERE id = ?')
+      .bind(counter, now, id)
+      .run();
+  },
+
+  // 删除凭证
+  async deleteCredential(db: D1Database, id: string): Promise<void> {
+    await db.prepare('DELETE FROM webauthn_credentials WHERE id = ?')
+      .bind(id)
+      .run();
+  }
+};
+
 // 账户相关数据库操作
 export const accountDb = {
   // 创建账户

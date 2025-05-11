@@ -1,5 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { Box, Text, Stack, Group, ThemeIcon } from '@mantine/core';
+import { IconFingerprint } from '@tabler/icons-react';
 
 interface NavItemProps {
   to: string;
@@ -34,25 +35,30 @@ export default function NavMenu() {
   return (
     <Box>
       <Stack gap="xs">
-        <NavItem 
-          to="/" 
-          label="仪表盘" 
-          icon={<span>📊</span>} 
+        <NavItem
+          to="/"
+          label="仪表盘"
+          icon={<span>📊</span>}
         />
-        <NavItem 
-          to="/accounts" 
-          label="账户管理" 
-          icon={<span>🔑</span>} 
+        <NavItem
+          to="/accounts"
+          label="账户管理"
+          icon={<span>🔑</span>}
         />
-        <NavItem 
-          to="/import-export" 
-          label="导入/导出" 
-          icon={<span>📤</span>} 
+        <NavItem
+          to="/import-export"
+          label="导入/导出"
+          icon={<span>📤</span>}
         />
-        <NavItem 
-          to="/settings" 
-          label="设置" 
-          icon={<span>⚙️</span>} 
+        <NavItem
+          to="/settings"
+          label="设置"
+          icon={<span>⚙️</span>}
+        />
+        <NavItem
+          to="/webauthn"
+          label="生物识别登录"
+          icon={<IconFingerprint size={16} />}
         />
       </Stack>
     </Box>
