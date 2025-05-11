@@ -18,6 +18,7 @@ import {
   Popover,
 } from '@mantine/core';
 import { useDisclosure } from '@mantine/hooks';
+import { IconRefresh, IconWifi, IconWifiOff } from '@tabler/icons-react';
 import { useAccounts } from '../contexts/AccountContext';
 import AccountForm from '../components/AccountForm';
 import type { OTPAccount } from '@/types';
@@ -31,7 +32,16 @@ const mockGroups = [
 ];
 
 export default function AccountsManage() {
-  const { accounts, loading, error, updateAccount, deleteAccount, createAccount } = useAccounts();
+  const {
+    accounts,
+    loading,
+    error,
+    isOnline,
+    updateAccount,
+    deleteAccount,
+    createAccount,
+    syncData
+  } = useAccounts();
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [opened, { open, close }] = useDisclosure(false);
@@ -109,12 +119,39 @@ export default function AccountsManage() {
 
   return (
     <Container size="lg" py="xl">
-      <Title order={2} mb="md">
-        管理账户
-      </Title>
+      <Group justify="space-between" align="center" mb="md">
+        <Title order={2}>
+          管理账户
+        </Title>
+
+        <Group>
+          {isOnline ? (
+            <Badge color="green" leftSection={<IconWifi size={14} />}>
+              在线模式
+            </Badge>
+          ) : (
+            <Badge color="yellow" leftSection={<IconWifiOff size={14} />}>
+              离线模式
+            </Badge>
+          )}
+
+          <Tooltip label="同步数据">
+            <ActionIcon
+              variant="light"
+              color="blue"
+              onClick={syncData}
+              disabled={!isOnline}
+              data-testid="sync-button"
+            >
+              <IconRefresh size={18} />
+            </ActionIcon>
+          </Tooltip>
+        </Group>
+      </Group>
 
       <Text c="dimmed" mb="xl">
         在这里管理您的所有二步验证账户
+        {!isOnline && ' 当前处于离线模式，部分功能可能不可用。'}
       </Text>
 
       <Group mb="md">
@@ -133,7 +170,12 @@ export default function AccountsManage() {
           clearable
         />
 
-        <Button onClick={handleAdd}>添加账户</Button>
+        <Button
+          onClick={handleAdd}
+          data-testid="add-account-button"
+        >
+          添加账户
+        </Button>
       </Group>
 
       {loading ? (
@@ -242,6 +284,7 @@ export default function AccountsManage() {
         title={editingAccount ? '编辑账户' : '添加新账户'}
         centered
         size="lg"
+        data-testid="account-modal"
       >
         <AccountForm
           initialValues={editingAccount || undefined}

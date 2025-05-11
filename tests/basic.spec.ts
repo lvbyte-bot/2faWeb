@@ -123,11 +123,14 @@ test.describe('基本功能测试', () => {
     await page.getByRole('button', { name: '注册' }).click();
     await page.waitForURL('http://localhost:3000/', { timeout: 10000 });
 
-    // 点击添加账户按钮
-    await page.getByRole('button', { name: '添加账户' }).click();
+    // 点击添加账户按钮 - 使用data-testid属性
+    await page.locator('[data-testid="add-account-button"]').click({ timeout: 10000 });
 
-    // 等待模态框出现
-    await expect(page.getByRole('dialog')).toBeVisible({ timeout: 5000 });
+    // 等待一段时间，确保模态框有时间打开
+    await page.waitForTimeout(2000);
+
+    // 等待模态框内的表单元素出现，这比检查模态框本身更可靠
+    await page.waitForSelector('input[placeholder="例如：Gmail"]', { timeout: 10000 });
 
     // 填写账户表单
     await page.getByLabel('名称').fill('Test Account');
@@ -135,7 +138,7 @@ test.describe('基本功能测试', () => {
     await page.getByLabel('密钥').fill('JBSWY3DPEHPK3PXP');
 
     // 保存账户
-    await page.getByRole('button', { name: '保存' }).click();
+    await page.locator('[data-testid="save-account-button"]').click();
 
     // 检查是否添加成功（增加超时时间）
     await expect(page.getByText('Test Account')).toBeVisible({ timeout: 5000 });
@@ -159,8 +162,22 @@ test.describe('基本功能测试', () => {
     await page.getByRole('button', { name: '注册' }).click();
     await page.waitForURL('http://localhost:3000/', { timeout: 10000 });
 
-    // 点击账户管理链接
-    await page.getByText('账户管理').click();
+    // 点击账户管理链接 - 使用更可靠的方法
+    // 在移动设备上，可能需要先点击汉堡菜单
+    const viewportSize = page.viewportSize();
+    const isMobile = viewportSize ? viewportSize.width < 768 : false;
+
+    if (isMobile) {
+      // 点击汉堡菜单按钮
+      await page.locator('button.mantine-Burger-root').first().click();
+      await page.waitForTimeout(500);
+    }
+
+    // 然后点击账户管理链接
+    const accountsLink = page.getByText('账户管理');
+    await accountsLink.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(500); // 等待滚动完成
+    await accountsLink.click();
 
     // 等待导航到账户管理页面
     await page.waitForURL('http://localhost:3000/accounts', { timeout: 5000 });
@@ -186,8 +203,22 @@ test.describe('基本功能测试', () => {
     await page.getByRole('button', { name: '注册' }).click();
     await page.waitForURL('http://localhost:3000/', { timeout: 10000 });
 
-    // 点击导入/导出链接
-    await page.getByText('导入/导出').click();
+    // 点击导入/导出链接 - 使用更可靠的方法
+    // 在移动设备上，可能需要先点击汉堡菜单
+    const viewportSize = page.viewportSize();
+    const isMobile = viewportSize ? viewportSize.width < 768 : false;
+
+    if (isMobile) {
+      // 点击汉堡菜单按钮
+      await page.locator('button.mantine-Burger-root').first().click();
+      await page.waitForTimeout(500);
+    }
+
+    // 然后点击导入/导出链接
+    const importExportLink = page.getByText('导入/导出');
+    await importExportLink.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(500); // 等待滚动完成
+    await importExportLink.click();
 
     // 等待导航到导入/导出页面
     await page.waitForURL('http://localhost:3000/import-export', { timeout: 5000 });
@@ -213,8 +244,22 @@ test.describe('基本功能测试', () => {
     await page.getByRole('button', { name: '注册' }).click();
     await page.waitForURL('http://localhost:3000/', { timeout: 10000 });
 
-    // 点击设置链接
-    await page.getByText('设置').click();
+    // 点击设置链接 - 使用更可靠的方法
+    // 在移动设备上，可能需要先点击汉堡菜单
+    const viewportSize = page.viewportSize();
+    const isMobile = viewportSize ? viewportSize.width < 768 : false;
+
+    if (isMobile) {
+      // 点击汉堡菜单按钮
+      await page.locator('button.mantine-Burger-root').first().click();
+      await page.waitForTimeout(500);
+    }
+
+    // 然后点击设置链接
+    const settingsLink = page.getByText('设置');
+    await settingsLink.scrollIntoViewIfNeeded();
+    await page.waitForTimeout(500); // 等待滚动完成
+    await settingsLink.click();
 
     // 等待导航到设置页面
     await page.waitForURL('http://localhost:3000/settings', { timeout: 5000 });

@@ -15,6 +15,7 @@
     "@mantine/form": "^8.0.0",
     "@mantine/hooks": "^8.0.0",
     "@mantine/notifications": "^8.0.0",
+    "@tabler/icons-react": "^3.31.0",
     "jsqr": "^1.4.0",
     "otpauth": "^9.4.0",
     "qrcode.react": "^4.2.0",

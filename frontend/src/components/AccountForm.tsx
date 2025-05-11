@@ -251,7 +251,10 @@ export default function AccountForm({
                 取消
               </Button>
 
-              <Button type="submit">
+              <Button
+                type="submit"
+                data-testid="save-account-button"
+              >
                 保存
               </Button>
             </Group>
