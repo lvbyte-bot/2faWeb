@@ -16,11 +16,14 @@ import {
   List,
   Loader,
   Center,
+  Progress,
 } from '@mantine/core';
 import { notifications } from '@mantine/notifications';
 import { useAccounts } from '../contexts/AccountContext';
 import type { OTPAccount } from '@/types';
 import { parseOtpUri } from '../utils/otp';
+import * as encryptionService from '../services/encryptionService';
+import * as cryptoUtils from '../utils/crypto';
 
 export default function ImportExport() {
   const { importAccounts, exportAccounts, loading } = useAccounts();
@@ -36,7 +39,9 @@ export default function ImportExport() {
   const [exportPassword, setExportPassword] = useState('');
   const [confirmExportPassword, setConfirmExportPassword] = useState('');
   const [includeSecrets, setIncludeSecrets] = useState(true);
+  const [encryptExport, setEncryptExport] = useState(true);
   const [isExporting, setIsExporting] = useState(false);
+  const [passwordStrength, setPasswordStrength] = useState({ score: 0, feedback: '' });
 
   // 解析导入文件
   const parseImportFile = (file: File) => {
@@ -45,9 +50,31 @@ export default function ImportExport() {
 
     const reader = new FileReader();
 
-    reader.onload = (e) => {
+    reader.onload = async (e) => {
       try {
-        const content = e.target?.result as string;
+        let content = e.target?.result as string;
+
+        // 检查是否是加密的导出文件
+        try {
+          if (encryptionService.isEncryptedExportData(content)) {
+            if (!importPassword) {
+              setParseError('此文件已加密，请提供密码');
+              return;
+            }
+
+            try {
+              // 尝试解密文件
+              content = await encryptionService.decryptImportData(content, importPassword);
+            } catch (decryptError) {
+              console.error('解密文件失败:', decryptError);
+              setParseError('解密文件失败，可能是密码错误');
+              return;
+            }
+          }
+        } catch (encryptionCheckError) {
+          // 不是加密文件，继续处理
+          console.log('不是加密文件，继续处理');
+        }
 
         // 尝试解析为 JSON
         try {
@@ -150,6 +177,23 @@ export default function ImportExport() {
     }
   };
 
+  // 检查密码强度
+  const checkPasswordStrength = (password: string) => {
+    if (password) {
+      const strength = cryptoUtils.checkPasswordStrength(password);
+      setPasswordStrength(strength);
+    } else {
+      setPasswordStrength({ score: 0, feedback: '' });
+    }
+  };
+
+  // 密码强度颜色
+  const getStrengthColor = (score: number) => {
+    if (score < 30) return 'red';
+    if (score < 60) return 'yellow';
+    return 'green';
+  };
+
   // 处理导出
   const handleExport = async () => {
     if (exportPassword !== confirmExportPassword) {
@@ -161,13 +205,21 @@ export default function ImportExport() {
       return;
     }
 
-    if (exportPassword.length < 8) {
+    if (encryptExport && exportPassword.length < 8) {
       notifications.show({
         title: '错误',
         message: '密码长度应至少为8个字符',
         color: 'red',
       });
       return;
+    }
+
+    if (encryptExport && passwordStrength.score < 30) {
+      notifications.show({
+        title: '警告',
+        message: '密码强度较弱，建议使用更强的密码',
+        color: 'yellow',
+      });
     }
 
     setIsExporting(true);
@@ -182,19 +234,37 @@ export default function ImportExport() {
         : accounts.map(({ secret, ...rest }) => rest);
 
       // 创建导出数据
-      const data = JSON.stringify({
+      let data = JSON.stringify({
         accounts: exportData,
         includeSecrets,
         exportDate: new Date().toISOString(),
         version: '1.0',
       }, null, 2);
 
+      // 如果启用加密，加密数据
+      let fileName = `2fa-web-export-${new Date().toISOString().split('T')[0]}`;
+      let fileType = 'application/json';
+
+      if (encryptExport && exportPassword) {
+        try {
+          data = await encryptionService.encryptExportData(data, exportPassword);
+          fileName += '.encrypted';
+        } catch (error) {
+          console.error('加密导出数据失败:', error);
+          notifications.show({
+            title: '加密失败',
+            message: '加密导出数据失败，将以未加密方式导出',
+            color: 'red',
+          });
+        }
+      }
+
       // 创建并下载文件
-      const blob = new Blob([data], { type: 'application/json' });
+      const blob = new Blob([data], { type: fileType });
       const url = URL.createObjectURL(blob);
       const a = document.createElement('a');
       a.href = url;
-      a.download = `2fa-web-export-${new Date().toISOString().split('T')[0]}.json`;
+      a.download = `${fileName}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -306,22 +376,55 @@ export default function ImportExport() {
                 onChange={(e) => setIncludeSecrets(e.currentTarget.checked)}
               />
 
+              <Checkbox
+                label="加密导出文件（推荐）"
+                checked={encryptExport}
+                onChange={(e) => setEncryptExport(e.currentTarget.checked)}
+              />
+
               <Divider my="sm" />
 
-              <PasswordInput
-                label="加密密码"
-                description="用于加密导出文件的密码"
-                placeholder="输入密码"
-                value={exportPassword}
-                onChange={(e) => setExportPassword(e.currentTarget.value)}
-              />
+              {encryptExport && (
+                <>
+                  <PasswordInput
+                    label="加密密码"
+                    description="用于加密导出文件的密码"
+                    placeholder="输入密码"
+                    value={exportPassword}
+                    onChange={(e) => {
+                      setExportPassword(e.currentTarget.value);
+                      checkPasswordStrength(e.currentTarget.value);
+                    }}
+                  />
 
-              <PasswordInput
-                label="确认密码"
-                placeholder="再次输入密码"
-                value={confirmExportPassword}
-                onChange={(e) => setConfirmExportPassword(e.currentTarget.value)}
-              />
+                  {exportPassword && (
+                    <Progress
+                      value={passwordStrength.score}
+                      color={getStrengthColor(passwordStrength.score)}
+                      size="sm"
+                      mb="xs"
+                    />
+                  )}
+
+                  {exportPassword && (
+                    <Text size="sm" color={getStrengthColor(passwordStrength.score)} mb="md">
+                      {passwordStrength.feedback}
+                    </Text>
+                  )}
+
+                  <PasswordInput
+                    label="确认密码"
+                    placeholder="再次输入密码"
+                    value={confirmExportPassword}
+                    onChange={(e) => setConfirmExportPassword(e.currentTarget.value)}
+                    error={
+                      confirmExportPassword && exportPassword !== confirmExportPassword
+                        ? '密码不匹配'
+                        : null
+                    }
+                  />
+                </>
+              )}
 
               <Alert title="安全提示" color="blue">
                 如果您选择包含密钥，请确保使用强密码加密导出文件，并在安全的地方保存该密码。
@@ -331,9 +434,11 @@ export default function ImportExport() {
                 onClick={handleExport}
                 loading={isExporting || loading}
                 disabled={
-                  !exportPassword ||
-                  exportPassword !== confirmExportPassword ||
-                  exportPassword.length < 8
+                  encryptExport && (
+                    !exportPassword ||
+                    exportPassword !== confirmExportPassword ||
+                    exportPassword.length < 8
+                  )
                 }
               >
                 导出

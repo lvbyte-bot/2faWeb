@@ -4,6 +4,7 @@ import { useDisclosure } from '@mantine/hooks'
 
 // 组件
 import NavMenu from './components/NavMenu'
+import EncryptionStatus from './components/EncryptionStatus'
 
 // 页面组件
 import Dashboard from './pages/Dashboard'
@@ -16,6 +17,7 @@ import WebAuthnSettings from './pages/WebAuthnSettings'
 import WebAuthnCredentials from './pages/WebAuthnCredentials'
 import ResetPassword from './pages/ResetPassword'
 import SessionManagement from './pages/SessionManagement'
+import EncryptionSettings from './pages/EncryptionSettings'
 
 // 上下文
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -56,9 +58,12 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
           </Group>
 
           {isAuthenticated && (
-            <Button variant="subtle" onClick={logout}>
-              退出登录
-            </Button>
+            <Group>
+              <EncryptionStatus />
+              <Button variant="subtle" onClick={logout}>
+                退出登录
+              </Button>
+            </Group>
           )}
         </Group>
       </AppShell.Header>
@@ -121,6 +126,11 @@ function App() {
             <Route path="/sessions" element={
               <ProtectedRoute>
                 <SessionManagement />
+              </ProtectedRoute>
+            } />
+            <Route path="/encryption" element={
+              <ProtectedRoute>
+                <EncryptionSettings />
               </ProtectedRoute>
             } />
             <Route path="*" element={<Navigate to="/" replace />} />

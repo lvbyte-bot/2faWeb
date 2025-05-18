@@ -88,8 +88,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   // 验证令牌
   const validateToken = async (token: string): Promise<boolean> => {
     try {
-      // 调用健康检查API验证令牌
-      const response = await fetch(`${API_BASE_URL}/auth/verify`, {
+      // 调用/me端点验证令牌
+      const response = await fetch(`${API_BASE_URL}/auth/me`, {
         headers: {
           'Authorization': `Bearer ${token}`
         }
