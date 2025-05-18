@@ -26,6 +26,7 @@
   "license": "MIT",
   "devDependencies": {
     "@playwright/test": "^1.52.0",
-    "concurrently": "^8.2.2"
+    "concurrently": "^8.2.2",
+    "qrcode": "^1.5.4"
   }
 }

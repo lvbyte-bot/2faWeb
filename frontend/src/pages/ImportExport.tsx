@@ -69,7 +69,89 @@ export default function ImportExport() {
           return;
         }
 
-        let content = e.target.result as string;
+        // 检查是否是图片文件（DataURL格式）
+        const result = e.target.result as string;
+        if (result.startsWith('data:image/')) {
+          console.log('处理图片文件...');
+
+          // 创建图片对象
+          const img = new Image();
+
+          img.onload = () => {
+            try {
+              console.log('图片加载成功，尺寸:', img.width, 'x', img.height);
+
+              // 创建画布
+              const canvas = document.createElement('canvas');
+              const context = canvas.getContext('2d');
+
+              if (!context) {
+                setParseError('无法创建画布上下文');
+                console.error('无法创建画布上下文');
+                return;
+              }
+
+              // 设置画布大小
+              canvas.width = img.width;
+              canvas.height = img.height;
+
+              // 绘制图片到画布
+              context.drawImage(img, 0, 0, img.width, img.height);
+
+              // 获取图像数据
+              const imageData = context.getImageData(0, 0, canvas.width, canvas.height);
+              console.log('获取图像数据成功，开始解析二维码');
+
+              // 导入jsQR库
+              import('jsqr').then(jsQRModule => {
+                const jsQR = jsQRModule.default;
+
+                // 尝试解析二维码
+                const code = jsQR(imageData.data, imageData.width, imageData.height, {
+                  inversionAttempts: 'attemptBoth', // 尝试正常和反转颜色
+                });
+
+                console.log('二维码解析结果:', code ? '成功' : '失败');
+
+                if (code && code.data.startsWith('otpauth://')) {
+                  try {
+                    console.log('检测到OTP二维码:', code.data.substring(0, 30) + '...');
+                    // 尝试解析 OTP URI
+                    const account = parseOtpUri(code.data);
+                    console.log('OTP URI解析成功:', account.name, account.issuer);
+
+                    // 设置解析结果
+                    setParsedAccounts([account]);
+                  } catch (err) {
+                    setParseError('无效的 OTP 二维码');
+                    console.error('解析 OTP URI 失败:', err);
+                  }
+                } else {
+                  setParseError('上传的图片不包含有效的 OTP 二维码');
+                  console.log('未检测到二维码或二维码不是OTP格式', code?.data);
+                }
+              }).catch(err => {
+                console.error('加载jsQR库失败:', err);
+                setParseError('加载二维码解析库失败');
+              });
+            } catch (err) {
+              setParseError('处理图片时出错');
+              console.error('处理图片失败:', err);
+            }
+          };
+
+          img.onerror = () => {
+            setParseError('无法加载图片');
+            console.error('图片加载失败');
+          };
+
+          // 设置图片源
+          img.src = result;
+          return;
+        }
+
+        // 处理文本内容
+        let content = result;
         console.log('文件内容长度:', content.length);
 
         // 检查是否是加密的导出文件
@@ -163,13 +245,22 @@ export default function ImportExport() {
       setParseError('读取文件失败: ' + (event.target?.error?.message || '未知错误'));
     };
 
-    // 根据文件类型选择读取方式
-    if (file.type === 'application/json' ||
+    // 检查是否是图片文件
+    const isImage = file.type.startsWith('image/') ||
+                   ['.png', '.jpg', '.jpeg', '.gif', '.bmp'].some(ext =>
+                     file.name.toLowerCase().endsWith(ext));
+
+    if (isImage) {
+      console.log('检测到图片文件，尝试解析为二维码');
+      // 对于图片文件，使用readAsDataURL读取
+      reader.readAsDataURL(file);
+    } else if (file.type === 'application/json' ||
         file.name.endsWith('.json') ||
         file.name.endsWith('.txt')) {
+      // 对于文本文件，使用readAsText读取
       reader.readAsText(file);
     } else {
-      // 对于二进制文件，先尝试以文本方式读取
+      // 对于其他二进制文件，先尝试以文本方式读取
       reader.readAsText(file);
     }
   };
@@ -206,7 +297,18 @@ export default function ImportExport() {
     setIsImporting(true);
 
     try {
-      await importAccounts(parsedAccounts);
+      console.log('开始导入账户，数量:', parsedAccounts.length);
+
+      // 检查账户数据是否有效
+      for (const account of parsedAccounts) {
+        if (!account.name || !account.secret) {
+          throw new Error(`账户数据缺少必要的字段（名称或密钥）: ${JSON.stringify(account)}`);
+        }
+      }
+
+      // 尝试导入账户
+      const importedAccounts = await importAccounts(parsedAccounts);
+      console.log('导入成功，返回数据:', importedAccounts);
 
       notifications.show({
         title: '导入成功',
@@ -214,13 +316,40 @@ export default function ImportExport() {
         color: 'green',
       });
 
+      // 清除导入状态
       setImportFile(null);
       setImportPassword('');
       setParsedAccounts([]);
+
+      // 延迟后跳转到仪表盘
+      setTimeout(() => {
+        window.location.href = '/';
+      }, 2000);
     } catch (error) {
+      console.error('导入失败:', error);
+
+      // 改进错误消息处理
+      let errorMessage = '导入账户失败';
+
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (typeof error === 'object' && error !== null) {
+        try {
+          // 尝试将对象转换为JSON字符串
+          errorMessage = JSON.stringify(error);
+        } catch (e) {
+          // 如果无法转换为JSON，使用Object.prototype.toString
+          errorMessage = Object.prototype.toString.call(error);
+        }
+      } else if (error !== undefined && error !== null) {
+        errorMessage = String(error);
+      }
+
+      console.log('格式化后的错误消息:', errorMessage);
+
       notifications.show({
         title: '导入失败',
-        message: error instanceof Error ? error.message : '导入账户失败',
+        message: errorMessage,
         color: 'red',
       });
     } finally {

@@ -297,4 +297,50 @@ test.describe('基本功能测试', () => {
     // 检查登录页面
     await expect(page.locator('h2')).toContainText('欢迎使用2FA Web');
   });
+  // 测试二维码上传功能
+  test('应该能够打开二维码上传对话框', async ({ page }) => {
+    // 创建新用户并登录
+    const randomSuffix = Math.floor(Math.random() * 10000);
+    const username = `testuser${randomSuffix}`;
+    const email = `testuser${randomSuffix}@example.com`;
+    const password = 'Password123!';
+
+    // 注册
+    await page.goto('http://localhost:3000/register', { timeout: 30000 });
+    await page.getByLabel('用户名').fill(username);
+    await page.getByLabel('电子邮件').fill(email);
+    await page.locator('input[type="password"]').first().fill(password);
+    await page.locator('input[type="password"]').nth(1).fill(password);
+    await page.getByRole('button', { name: '注册' }).click();
+    await page.waitForURL('http://localhost:3000/', { timeout: 10000 });
+
+    // 点击添加账户按钮
+    await page.locator('[data-testid="add-account-button"]').click({ timeout: 10000 });
+    await page.waitForTimeout(1000);
+
+    // 点击扫描二维码按钮
+    await page.getByRole('button', { name: '扫描二维码' }).click();
+    await page.waitForTimeout(1000);
+
+    // 检查二维码扫描模态框是否打开
+    await expect(page.getByText('扫描二维码')).toBeVisible();
+
+    // 检查上传二维码图片按钮是否存在
+    await expect(page.getByRole('button', { name: '上传二维码图片' })).toBeVisible();
+
+    // 点击上传二维码图片按钮，应该会触发文件选择对话框
+    // 由于无法直接测试文件选择对话框，我们可以检查是否存在隐藏的文件输入框
+    const fileInputExists = await page.evaluate(() => {
+      // 查找隐藏的文件输入框
+      const fileInputs = Array.from(document.querySelectorAll('input[type="file"]'));
+      return fileInputs.length > 0;
+    });
+
+    // 断言存在文件输入框
+    expect(fileInputExists).toBeTruthy();
+
+    // 关闭模态框
+    await page.getByRole('button', { name: '取消' }).click();
+    await page.waitForTimeout(500);
+  });
 });

@@ -14,6 +14,7 @@ export default function QRCodeScanner({ onScan, onClose }: QRCodeScannerProps) {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   // 启动摄像头
   const startCamera = async () => {
@@ -252,17 +253,24 @@ export default function QRCodeScanner({ onScan, onClose }: QRCodeScannerProps) {
 
         <Group justify="center">
           <Button
-            component="label"
             variant="outline"
+            onClick={() => {
+              // 使用ref触发文件选择框
+              if (fileInputRef.current) {
+                fileInputRef.current.click();
+              }
+            }}
           >
             上传二维码图片
-            <input
-              type="file"
-              accept="image/*"
-              style={{ display: 'none' }}
-              onChange={handleFileUpload}
-            />
           </Button>
+          {/* 隐藏的文件输入框 */}
+          <input
+            ref={fileInputRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={handleFileUpload}
+          />
         </Group>
 
         <Button variant="subtle" onClick={onClose}>取消</Button>
