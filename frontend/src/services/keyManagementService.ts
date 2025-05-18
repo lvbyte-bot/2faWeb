@@ -20,6 +20,14 @@ let sessionMasterPassword: string | null = null;
 let sessionDataKey: string | null = null;
 
 /**
+ * 获取当前会话的主密码（仅用于内部操作，如备份加密）
+ * @returns 当前会话的主密码，如果未解锁则返回空字符串
+ */
+export function getMasterPassword(): string {
+  return sessionMasterPassword || '';
+}
+
+/**
  * 检查加密是否已设置
  * @returns 加密是否已设置
  */
@@ -46,23 +54,23 @@ export async function setupEncryption(masterPassword: string): Promise<boolean> 
   try {
     // 生成随机数据密钥
     const dataKey = cryptoUtils.generateRandomKey();
-    
+
     // 使用主密码加密数据密钥
     const encryptedDataKey = await cryptoUtils.encryptData(dataKey, masterPassword);
-    
+
     // 计算主密码哈希（用于验证）
     const masterKeyHash = await cryptoUtils.hashData(masterPassword);
-    
+
     // 存储加密信息
     localStorage.setItem(MASTER_KEY_HASH, masterKeyHash);
     localStorage.setItem(ENCRYPTED_DATA_KEY, encryptedDataKey);
     localStorage.setItem(ENCRYPTION_ENABLED, 'true');
     localStorage.setItem(ENCRYPTION_VERSION, CURRENT_VERSION);
-    
+
     // 设置会话变量
     sessionMasterPassword = masterPassword;
     sessionDataKey = dataKey;
-    
+
     return true;
   } catch (error) {
     console.error('设置加密失败:', error);
@@ -79,7 +87,7 @@ export async function verifyMasterPassword(masterPassword: string): Promise<bool
   try {
     const storedHash = localStorage.getItem(MASTER_KEY_HASH);
     if (!storedHash) return false;
-    
+
     const inputHash = await cryptoUtils.hashData(masterPassword);
     return inputHash === storedHash;
   } catch (error) {
@@ -100,19 +108,19 @@ export async function unlockEncryption(masterPassword: string): Promise<boolean>
     if (!isValid) {
       return false;
     }
-    
+
     // 解密数据密钥
     const encryptedDataKey = localStorage.getItem(ENCRYPTED_DATA_KEY);
     if (!encryptedDataKey) {
       return false;
     }
-    
+
     const dataKey = await cryptoUtils.decryptData(encryptedDataKey, masterPassword);
-    
+
     // 设置会话变量
     sessionMasterPassword = masterPassword;
     sessionDataKey = dataKey;
-    
+
     return true;
   } catch (error) {
     console.error('解锁加密失败:', error);
@@ -141,7 +149,7 @@ export async function changeMasterPassword(currentPassword: string, newPassword:
     if (!isValid) {
       return false;
     }
-    
+
     // 确保数据密钥已加载
     if (!sessionDataKey) {
       const unlocked = await unlockEncryption(currentPassword);
@@ -149,20 +157,20 @@ export async function changeMasterPassword(currentPassword: string, newPassword:
         return false;
       }
     }
-    
+
     // 使用新密码加密数据密钥
     const encryptedDataKey = await cryptoUtils.encryptData(sessionDataKey, newPassword);
-    
+
     // 计算新密码哈希
     const masterKeyHash = await cryptoUtils.hashData(newPassword);
-    
+
     // 更新存储
     localStorage.setItem(MASTER_KEY_HASH, masterKeyHash);
     localStorage.setItem(ENCRYPTED_DATA_KEY, encryptedDataKey);
-    
+
     // 更新会话变量
     sessionMasterPassword = newPassword;
-    
+
     return true;
   } catch (error) {
     console.error('更改主密码失败:', error);
@@ -182,16 +190,16 @@ export async function disableEncryption(masterPassword: string): Promise<boolean
     if (!isValid) {
       return false;
     }
-    
+
     // 清除加密信息
     localStorage.removeItem(MASTER_KEY_HASH);
     localStorage.removeItem(ENCRYPTED_DATA_KEY);
     localStorage.setItem(ENCRYPTION_ENABLED, 'false');
-    
+
     // 清除会话变量
     sessionMasterPassword = null;
     sessionDataKey = null;
-    
+
     return true;
   } catch (error) {
     console.error('禁用加密失败:', error);
@@ -209,7 +217,7 @@ export async function encrypt(data: string): Promise<string> {
     if (!sessionDataKey) {
       throw new Error('加密会话未激活');
     }
-    
+
     return await cryptoUtils.encryptData(data, sessionDataKey);
   } catch (error) {
     console.error('加密数据失败:', error);
@@ -227,7 +235,7 @@ export async function decrypt(encryptedData: string): Promise<string> {
     if (!sessionDataKey) {
       throw new Error('加密会话未激活');
     }
-    
+
     return await cryptoUtils.decryptData(encryptedData, sessionDataKey);
   } catch (error) {
     console.error('解密数据失败:', error);

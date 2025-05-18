@@ -1,6 +1,6 @@
 import { NavLink } from 'react-router-dom';
 import { Box, Text, Stack, Group, ThemeIcon } from '@mantine/core';
-import { IconFingerprint, IconDevices, IconLock } from '@tabler/icons-react';
+import { IconFingerprint, IconDevices, IconLock, IconDownload } from '@tabler/icons-react';
 
 interface NavItemProps {
   to: string;
@@ -69,6 +69,11 @@ export default function NavMenu() {
           to="/encryption"
           label="端到端加密"
           icon={<IconLock size={16} />}
+        />
+        <NavItem
+          to="/backup"
+          label="备份与恢复"
+          icon={<IconDownload size={16} />}
         />
       </Stack>
     </Box>

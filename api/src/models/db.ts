@@ -203,6 +203,13 @@ export const userDb = {
 
     // 执行更新
     await db.prepare(sql).bind(...params).run();
+  },
+
+  // 更新用户设置
+  async updateUserSettings(db: D1Database, id: string, settings: string): Promise<void> {
+    await db.prepare('UPDATE users SET settings = ? WHERE id = ?')
+      .bind(settings, id)
+      .run();
   }
 };
 

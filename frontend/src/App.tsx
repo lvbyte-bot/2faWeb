@@ -18,6 +18,7 @@ import WebAuthnCredentials from './pages/WebAuthnCredentials'
 import ResetPassword from './pages/ResetPassword'
 import SessionManagement from './pages/SessionManagement'
 import EncryptionSettings from './pages/EncryptionSettings'
+import BackupRestore from './pages/BackupRestore'
 
 // 上下文
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -131,6 +132,11 @@ function App() {
             <Route path="/encryption" element={
               <ProtectedRoute>
                 <EncryptionSettings />
+              </ProtectedRoute>
+            } />
+            <Route path="/backup" element={
+              <ProtectedRoute>
+                <BackupRestore />
               </ProtectedRoute>
             } />
             <Route path="*" element={<Navigate to="/" replace />} />
