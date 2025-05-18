@@ -1,4 +1,5 @@
-import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { createContext, useContext, useState, useEffect } from 'react';
+import type { ReactNode } from 'react';
 import { notifications } from '@mantine/notifications';
 import type { OTPAccount } from '@/types';
 import * as syncService from '../services/syncService';

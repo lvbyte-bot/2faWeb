@@ -17,7 +17,7 @@ vi.mock('@mantine/notifications', () => ({
 
 // 模拟syncAccounts函数
 vi.mock('../syncService', async (importOriginal) => {
-  const actual = await importOriginal();
+  const actual = await importOriginal() as Record<string, unknown>;
   return {
     ...actual,
     syncAccounts: vi.fn().mockResolvedValue(undefined),

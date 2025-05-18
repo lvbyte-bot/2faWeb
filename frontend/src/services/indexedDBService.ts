@@ -7,11 +7,13 @@ const ACCOUNTS_STORE = 'accounts';
 const SYNC_STORE = 'syncInfo';
 
 // 同步状态类型
-export enum SyncStatus {
-  SYNCED = 'synced',
-  PENDING = 'pending',
-  CONFLICT = 'conflict',
-}
+export const SyncStatus = {
+  SYNCED: 'synced',
+  PENDING: 'pending',
+  CONFLICT: 'conflict',
+} as const;
+
+export type SyncStatus = typeof SyncStatus[keyof typeof SyncStatus];
 
 // 带同步信息的账户类型
 export interface SyncedAccount extends OTPAccount {

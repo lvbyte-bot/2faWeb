@@ -76,13 +76,13 @@ export default function SessionManagement() {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get('/auth/sessions');
-      
+      const response = await api.get('/auth/sessions') as Response;
+
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || '获取会话列表失败');
       }
-      
+
       const data = await response.json();
       setSessions(data.sessions);
     } catch (error) {
@@ -97,16 +97,16 @@ export default function SessionManagement() {
   const revokeSession = async (sessionId: string) => {
     setRevokingSession(sessionId);
     try {
-      const response = await api.delete_(`/auth/sessions/${sessionId}`);
-      
+      const response = await api.delete_(`/auth/sessions/${sessionId}`) as Response;
+
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || '撤销会话失败');
       }
-      
+
       // 更新会话列表
       setSessions(sessions.filter(session => session.id !== sessionId));
-      
+
       notifications.show({
         title: '会话已撤销',
         message: '会话已成功撤销',
@@ -130,23 +130,23 @@ export default function SessionManagement() {
   const revokeAllSessions = async () => {
     setRevokingAll(true);
     try {
-      const response = await api.delete_('/auth/sessions');
-      
+      const response = await api.delete_('/auth/sessions') as Response;
+
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.error || '撤销所有会话失败');
       }
-      
+
       // 更新会话列表，只保留当前会话
       setSessions(sessions.filter(session => session.isCurrent));
-      
+
       notifications.show({
         title: '所有其他会话已撤销',
         message: '所有其他设备的会话已成功撤销',
         color: 'green',
         icon: <IconCheck size={16} />,
       });
-      
+
       closeRevokeAll();
     } catch (error) {
       console.error('撤销所有会话失败:', error);

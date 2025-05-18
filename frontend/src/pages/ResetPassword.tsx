@@ -35,7 +35,7 @@ function RequestResetForm() {
   const handleSubmit = async (values: { email: string }) => {
     setLoading(true);
     try {
-      const response = await api.post('/auth/password-reset/request', values);
+      const response = await api.post('/auth/password-reset/request', values) as Response;
       const data = await response.json();
 
       if (response.ok) {
@@ -134,7 +134,7 @@ function ResetPasswordForm({ token }: { token: string }) {
       const response = await api.post('/auth/password-reset/reset', {
         token,
         password: values.password,
-      });
+      }) as Response;
       const data = await response.json();
 
       if (response.ok) {

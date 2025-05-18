@@ -11,7 +11,7 @@ export function isOnline(): boolean {
 }
 
 // 将普通账户转换为带同步信息的账户
-export function toSyncedAccount(account: OTPAccount, syncStatus = SyncStatus.SYNCED): SyncedAccount {
+export function toSyncedAccount(account: OTPAccount, syncStatus: SyncStatus = SyncStatus.SYNCED): SyncedAccount {
   return {
     ...account,
     lastModified: Date.now(),

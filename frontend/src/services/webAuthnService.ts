@@ -16,7 +16,7 @@ import type {
 export async function registerWebAuthn(username: string): Promise<{ credentialID: string }> {
   try {
     // 1. 从服务器获取注册选项
-    const optionsResponse = await api.post('/auth/webauthn/register/options', { username });
+    const optionsResponse = await api.post('/auth/webauthn/register/options', { username }) as Response;
     const options = await optionsResponse.json();
 
     if (!options || optionsResponse.status !== 200) {
@@ -29,7 +29,7 @@ export async function registerWebAuthn(username: string): Promise<{ credentialID
     // 3. 将注册响应发送到服务器进行验证
     const verificationResponse = await api.post('/auth/webauthn/register/verify', {
       response: registrationResponse,
-    });
+    }) as Response;
     const verification = await verificationResponse.json();
 
     if (!verification || verificationResponse.status !== 200) {
@@ -54,7 +54,7 @@ export async function loginWithWebAuthn(username?: string): Promise<{
 }> {
   try {
     // 1. 从服务器获取登录选项
-    const optionsResponse = await api.post('/auth/webauthn/login/options', { username });
+    const optionsResponse = await api.post('/auth/webauthn/login/options', { username }) as Response;
     const options = await optionsResponse.json();
 
     if (!options || optionsResponse.status !== 200) {
@@ -67,7 +67,7 @@ export async function loginWithWebAuthn(username?: string): Promise<{
     // 3. 将认证响应发送到服务器进行验证
     const verificationResponse = await api.post('/auth/webauthn/login/verify', {
       response: authenticationResponse,
-    });
+    }) as Response;
     const verification = await verificationResponse.json();
 
     if (!verification || verificationResponse.status !== 200) {
@@ -126,7 +126,7 @@ export interface WebAuthnCredential {
  */
 export async function getCredentials(): Promise<WebAuthnCredential[]> {
   try {
-    const response = await api.get('/webauthn/credentials');
+    const response = await api.get('/webauthn/credentials') as Response;
     const data = await response.json();
 
     if (!data || response.status !== 200) {
@@ -148,7 +148,7 @@ export async function getCredentials(): Promise<WebAuthnCredential[]> {
  */
 export async function updateCredentialName(id: string, name: string): Promise<WebAuthnCredential> {
   try {
-    const response = await api.put(`/webauthn/credentials/${id}/name`, { name });
+    const response = await api.put(`/webauthn/credentials/${id}/name`, { name }) as Response;
     const data = await response.json();
 
     if (!data || response.status !== 200) {
@@ -169,7 +169,7 @@ export async function updateCredentialName(id: string, name: string): Promise<We
  */
 export async function deleteCredential(id: string): Promise<boolean> {
   try {
-    const response = await api.delete_(`/webauthn/credentials/${id}`);
+    const response = await api.delete_(`/webauthn/credentials/${id}`) as Response;
     const data = await response.json();
 
     if (!data || response.status !== 200) {

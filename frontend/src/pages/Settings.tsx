@@ -80,7 +80,7 @@ export default function Settings() {
       const response = await api.post('/auth/password/update', {
         currentPassword,
         newPassword,
-      });
+      }) as Response;
 
       if (!response.ok) {
         const data = await response.json();

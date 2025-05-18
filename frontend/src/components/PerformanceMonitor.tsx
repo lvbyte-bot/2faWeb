@@ -16,19 +16,19 @@ export default function PerformanceMonitor() {
   const [visible, setVisible] = useState(false);
   const [performanceData, setPerformanceData] = useState<PerformanceData[]>([]);
   const [cacheStats, setCacheStats] = useState<any>(null);
-  
+
   // 更新性能数据
   const updatePerformanceData = () => {
     const marks = getMarks() as Record<string, any[]>;
     const data: PerformanceData[] = [];
-    
+
     Object.entries(marks).forEach(([name, markArray]) => {
       if (markArray.length === 0) return;
-      
+
       const totalDuration = markArray.reduce((sum, mark) => sum + mark.duration, 0);
       const avgDuration = totalDuration / markArray.length;
       const maxDuration = Math.max(...markArray.map(mark => mark.duration));
-      
+
       data.push({
         name,
         count: markArray.length,
@@ -37,12 +37,12 @@ export default function PerformanceMonitor() {
         totalDuration,
       });
     });
-    
+
     // 按总时间排序
     data.sort((a, b) => b.totalDuration - a.totalDuration);
-    
+
     setPerformanceData(data);
-    
+
     // 更新缓存统计
     try {
       setCacheStats(getApiCacheStats());
@@ -50,24 +50,24 @@ export default function PerformanceMonitor() {
       console.error('获取缓存统计失败:', error);
     }
   };
-  
+
   // 定期更新性能数据
   useEffect(() => {
     if (!visible) return;
-    
+
     updatePerformanceData();
     const interval = setInterval(updatePerformanceData, 2000);
-    
+
     return () => clearInterval(interval);
   }, [visible]);
-  
+
   // 获取性能等级
   const getPerformanceLevel = (duration: number): 'success' | 'warning' | 'error' => {
     if (duration < 50) return 'success';
     if (duration < 200) return 'warning';
     return 'error';
   };
-  
+
   if (!visible) {
     return (
       <Tooltip label="性能监控">
@@ -89,7 +89,7 @@ export default function PerformanceMonitor() {
       </Tooltip>
     );
   }
-  
+
   return (
     <Box
       style={{
@@ -106,9 +106,9 @@ export default function PerformanceMonitor() {
         padding: '16px',
       }}
     >
-      <Group position="apart" mb="md">
+      <Group justify="space-between" mb="md">
         <Text fw={700}>性能监控</Text>
-        <Group spacing="xs">
+        <Group gap="xs">
           <ActionIcon size="sm" variant="light" onClick={updatePerformanceData}>
             <IconRefresh size={16} />
           </ActionIcon>
@@ -117,7 +117,7 @@ export default function PerformanceMonitor() {
           </ActionIcon>
         </Group>
       </Group>
-      
+
       <Group mb="md">
         <Button size="xs" variant="light" onClick={() => {
           clearMarks();
@@ -131,11 +131,11 @@ export default function PerformanceMonitor() {
           打印报告
         </Button>
       </Group>
-      
+
       {cacheStats && (
         <Box mb="md">
           <Text fw={500} size="sm" mb="xs">API缓存统计</Text>
-          <Group spacing="xs">
+          <Group gap="xs">
             <Badge color={cacheStats.enabled ? 'green' : 'gray'}>
               {cacheStats.enabled ? '已启用' : '已禁用'}
             </Badge>
@@ -151,9 +151,9 @@ export default function PerformanceMonitor() {
           </Group>
         </Box>
       )}
-      
+
       <Text fw={500} size="sm" mb="xs">操作性能</Text>
-      
+
       {performanceData.length === 0 ? (
         <Text c="dimmed" size="sm">暂无性能数据</Text>
       ) : (
@@ -161,9 +161,9 @@ export default function PerformanceMonitor() {
           {performanceData.map((data) => (
             <Accordion.Item key={data.name} value={data.name}>
               <Accordion.Control>
-                <Group position="apart">
+                <Group justify="space-between">
                   <Text size="sm">{data.name}</Text>
-                  <Badge 
+                  <Badge
                     color={getPerformanceLevel(data.avgDuration)}
                     size="sm"
                   >

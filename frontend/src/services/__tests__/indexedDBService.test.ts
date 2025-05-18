@@ -94,7 +94,7 @@ describe.skip('indexedDBService', () => {
   // 在每个测试前设置模拟
   beforeEach(() => {
     // 保存原始的 indexedDB
-    global.indexedDB = window.indexedDB;
+    const originalIndexedDB = window.indexedDB;
 
     // 模拟 indexedDB
     Object.defineProperty(window, 'indexedDB', {
@@ -120,7 +120,7 @@ describe.skip('indexedDBService', () => {
   afterEach(() => {
     // 恢复原始的 indexedDB
     Object.defineProperty(window, 'indexedDB', {
-      value: global.indexedDB,
+      value: mockIndexedDB,
       writable: true,
     });
   });

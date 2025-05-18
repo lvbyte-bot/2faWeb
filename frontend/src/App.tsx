@@ -91,7 +91,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 
 function App() {
   // 判断是否为开发环境
-  const isDevelopment = process.env.NODE_ENV === 'development';
+  const isDevelopment = import.meta.env.DEV;
 
   return (
     <AuthProvider>

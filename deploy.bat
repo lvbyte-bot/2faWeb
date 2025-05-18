@@ -63,15 +63,10 @@ call :print_info "设置 D1 数据库..."
 findstr /C:"database_id = \"placeholder\"" api\wrangler.toml >nul
 if %ERRORLEVEL% equ 0 (
     call :print_info "创建新的 D1 数据库..."
-    for /f "tokens=*" %%a in ('wrangler d1 create 2fa_web_db 2^>^&1') do (
-        set "DB_RESULT=%%a"
-        echo !DB_RESULT! | findstr /C:"created" >nul
-        if !ERRORLEVEL! equ 0 (
-            for /f "tokens=2" %%b in ('echo !DB_RESULT! ^| findstr /C:"id:"') do (
-                set "DB_ID=%%b"
-            )
-        )
-    )
+    wrangler d1 create 2fa_web_db
+
+    call :print_warning "请从上面的输出中复制D1数据库ID并输入："
+    set /p DB_ID="D1数据库ID: "
 
     if defined DB_ID (
         call :print_success "D1 数据库创建成功，ID: !DB_ID!"
@@ -80,7 +75,7 @@ if %ERRORLEVEL% equ 0 (
         powershell -Command "(Get-Content api\wrangler.toml) -replace 'database_id = \"placeholder\"', 'database_id = \"!DB_ID!\"' | Set-Content api\wrangler.toml"
         call :print_success "已更新 wrangler.toml 中的数据库ID"
     ) else (
-        call :print_error "创建 D1 数据库失败"
+        call :print_error "未提供有效的D1数据库ID"
         exit /b 1
     )
 ) else (
@@ -94,11 +89,28 @@ if %ERRORLEVEL% equ 0 (
 :: 初始化数据库表
 call :print_info "初始化数据库表..."
 cd api
-:: 获取数据库名称
+:: 获取数据库名称和ID
 for /f "tokens=3 delims=\" %%a in ('findstr /C:"database_name" wrangler.toml') do (
     set "DB_NAME=%%~a"
 )
+for /f "tokens=3 delims=\" %%a in ('findstr /C:"database_id" wrangler.toml') do (
+    set "DB_ID=%%~a"
+)
+
+:: 检查数据库ID是否为空
+if "!DB_ID!"=="" (
+    call :print_error "数据库ID无效，无法初始化数据库表"
+    cd ..
+    exit /b 1
+)
+if "!DB_ID!"=="placeholder" (
+    call :print_error "数据库ID无效，无法初始化数据库表"
+    cd ..
+    exit /b 1
+)
+
 :: 执行SQL脚本
+call :print_info "使用数据库名称: !DB_NAME!, ID: !DB_ID!"
 wrangler d1 execute !DB_NAME! --file=./migrations/schema.sql
 cd ..
 call :print_success "数据库表初始化完成"
@@ -110,15 +122,10 @@ call :print_info "设置 KV 命名空间..."
 findstr /C:"id = \"placeholder\"" api\wrangler.toml >nul
 if %ERRORLEVEL% equ 0 (
     call :print_info "创建新的 KV 命名空间..."
-    for /f "tokens=*" %%a in ('wrangler kv namespace create SESSIONS 2^>^&1') do (
-        set "KV_RESULT=%%a"
-        echo !KV_RESULT! | findstr /C:"created" >nul
-        if !ERRORLEVEL! equ 0 (
-            for /f "tokens=2" %%b in ('echo !KV_RESULT! ^| findstr /C:"id:"') do (
-                set "KV_ID=%%b"
-            )
-        )
-    )
+    wrangler kv namespace create SESSIONS
+
+    call :print_warning "请从上面的输出中复制KV命名空间ID并输入："
+    set /p KV_ID="KV命名空间ID: "
 
     if defined KV_ID (
         call :print_success "KV 命名空间创建成功，ID: !KV_ID!"
@@ -127,7 +134,7 @@ if %ERRORLEVEL% equ 0 (
         powershell -Command "(Get-Content api\wrangler.toml) -replace 'id = \"placeholder\"', 'id = \"!KV_ID!\"' | Set-Content api\wrangler.toml"
         call :print_success "已更新 wrangler.toml 中的KV命名空间ID"
     ) else (
-        call :print_error "创建 KV 命名空间失败"
+        call :print_error "未提供有效的KV命名空间ID"
         exit /b 1
     )
 ) else (
@@ -184,6 +191,16 @@ echo VITE_API_URL=!API_URL!> frontend\.env.production
 echo VITE_APP_NAME=2FA Web>> frontend\.env.production
 echo VITE_ENABLE_PERFORMANCE_MONITORING=false>> frontend\.env.production
 echo VITE_DEBUG_MODE=false>> frontend\.env.production
+
+:: 确保.env.production不会被git跟踪
+findstr /C:"frontend/.env.production" .gitignore >nul 2>&1
+if %ERRORLEVEL% neq 0 (
+    call :print_info "将 frontend/.env.production 添加到 .gitignore"
+    echo.>> .gitignore
+    echo # 本地环境配置文件>> .gitignore
+    echo frontend/.env.production>> .gitignore
+    echo api/.env>> .gitignore
+)
 
 call :print_success "前端环境变量已更新"
 

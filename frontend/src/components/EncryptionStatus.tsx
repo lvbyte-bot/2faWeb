@@ -25,16 +25,16 @@ export default function EncryptionStatus() {
     const checkEncryptionStatus = () => {
       const isSet = keyManagement.isEncryptionSet();
       const isActive = keyManagement.hasActiveEncryptionSession();
-      
+
       setEncryptionEnabled(isSet);
       setEncryptionActive(isActive);
     };
-    
+
     checkEncryptionStatus();
-    
+
     // 定期检查加密状态
     const interval = setInterval(checkEncryptionStatus, 5000);
-    
+
     return () => clearInterval(interval);
   }, []);
 
@@ -44,18 +44,18 @@ export default function EncryptionStatus() {
 
     try {
       const success = await keyManagement.unlockEncryption(password);
-      
+
       if (success) {
         notifications.show({
           title: '成功',
           message: '加密已解锁',
           color: 'green',
         });
-        
+
         setEncryptionActive(true);
         setPassword('');
         close();
-        
+
         // 同步数据以解密现有数据
         await syncData();
       } else {
@@ -99,7 +99,7 @@ export default function EncryptionStatus() {
         label={encryptionActive ? '加密已解锁' : '加密已锁定，点击解锁'}
         position="bottom"
       >
-        <Group spacing="xs">
+        <Group gap="xs">
           <Badge
             color={encryptionActive ? 'green' : 'yellow'}
             variant="filled"
@@ -117,7 +117,7 @@ export default function EncryptionStatus() {
           <Text size="sm">
             您的数据已加密。请输入主密码解锁。
           </Text>
-          
+
           <PasswordInput
             label="主密码"
             placeholder="输入您的主密码"
@@ -129,8 +129,8 @@ export default function EncryptionStatus() {
               }
             }}
           />
-          
-          <Group position="right">
+
+          <Group justify="flex-end">
             <Button variant="outline" onClick={close}>
               取消
             </Button>

@@ -30,13 +30,16 @@ export async function get(
   const makeRequest = () => {
     const token = localStorage.getItem('token');
 
-    const headers: HeadersInit = {
+    let headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
     };
 
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers = {
+        ...headers,
+        Authorization: `Bearer ${token}`
+      };
     }
 
     return fetch(`${API_BASE_URL}${endpoint}`, {
@@ -84,13 +87,16 @@ export async function post(endpoint: string, data: any, options: RequestInit = {
   const makeRequest = () => {
     const token = localStorage.getItem('token');
 
-    const headers: HeadersInit = {
+    let headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
     };
 
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers = {
+        ...headers,
+        Authorization: `Bearer ${token}`
+      };
     }
 
     return fetch(`${API_BASE_URL}${endpoint}`, {
@@ -131,13 +137,16 @@ export async function put(endpoint: string, data: any, options: RequestInit = {}
   const makeRequest = () => {
     const token = localStorage.getItem('token');
 
-    const headers: HeadersInit = {
+    let headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
     };
 
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers = {
+        ...headers,
+        Authorization: `Bearer ${token}`
+      };
     }
 
     return fetch(`${API_BASE_URL}${endpoint}`, {
@@ -177,13 +186,16 @@ export async function delete_(endpoint: string, options: RequestInit = {}) {
   const makeRequest = () => {
     const token = localStorage.getItem('token');
 
-    const headers: HeadersInit = {
+    let headers: HeadersInit = {
       'Content-Type': 'application/json',
       ...options.headers,
     };
 
     if (token) {
-      headers['Authorization'] = `Bearer ${token}`;
+      headers = {
+        ...headers,
+        Authorization: `Bearer ${token}`
+      };
     }
 
     return fetch(`${API_BASE_URL}${endpoint}`, {
@@ -215,15 +227,16 @@ export async function delete_(endpoint: string, options: RequestInit = {}) {
  * @param pattern 可选的键模式（正则表达式）
  */
 export function clearApiCache(pattern?: RegExp): void {
-  const { clearCache } = require('./apiCache');
-  clearCache(pattern);
+  import('./apiCache').then(({ clearCache }) => {
+    clearCache(pattern);
+  });
 }
 
 /**
  * 获取API缓存统计信息
  * @returns 缓存统计信息
  */
-export function getApiCacheStats(): any {
-  const { getCacheStats } = require('./apiCache');
+export async function getApiCacheStats(): Promise<any> {
+  const { getCacheStats } = await import('./apiCache');
   return getCacheStats();
 }

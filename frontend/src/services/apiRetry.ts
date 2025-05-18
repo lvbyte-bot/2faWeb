@@ -58,13 +58,13 @@ function delay(ms: number): Promise<void> {
  */
 function calculateDelay(retryCount: number): number {
   const { initialDelay, maxDelay, backoffFactor } = currentConfig;
-  
+
   // 指数退避策略
   const exponentialDelay = initialDelay * Math.pow(backoffFactor, retryCount);
-  
+
   // 添加随机抖动（±20%）
   const jitter = 0.8 + Math.random() * 0.4;
-  
+
   // 确保不超过最大延迟
   return Math.min(exponentialDelay * jitter, maxDelay);
 }
@@ -79,22 +79,22 @@ function shouldRetry(error: any): boolean {
   if (error.name === 'TypeError' && error.message.includes('Network')) {
     return true;
   }
-  
+
   // 超时错误应该重试
   if (error.name === 'TimeoutError') {
     return true;
   }
-  
+
   // 检查状态码
   if (error.status && currentConfig.retryableStatusCodes.includes(error.status)) {
     return true;
   }
-  
+
   // 检查响应对象
   if (error.response && currentConfig.retryableStatusCodes.includes(error.response.status)) {
     return true;
   }
-  
+
   return false;
 }
 
@@ -111,7 +111,7 @@ export async function withRetry<T>(
   const perfId = startMark('withRetry');
   const config = { ...currentConfig, ...options };
   let retryCount = 0;
-  
+
   while (true) {
     try {
       const result = await fn();
@@ -122,15 +122,15 @@ export async function withRetry<T>(
         endMark(perfId, 'withRetry');
         throw error;
       }
-      
+
       // 计算延迟时间
       const delayTime = calculateDelay(retryCount);
-      
+
       console.warn(`API调用失败，将在 ${delayTime}ms 后重试 (${retryCount + 1}/${config.maxRetries})`, error);
-      
+
       // 等待延迟时间
       await delay(delayTime);
-      
+
       // 增加重试计数
       retryCount++;
     }
@@ -148,7 +148,7 @@ export async function withTimeout<T>(
   timeoutMs: number = 10000
 ): Promise<T> {
   const perfId = startMark('withTimeout');
-  
+
   // 创建超时Promise
   const timeoutPromise = new Promise<never>((_, reject) => {
     setTimeout(() => {
@@ -157,7 +157,7 @@ export async function withTimeout<T>(
       reject(error);
     }, timeoutMs);
   });
-  
+
   try {
     // 竞争API调用和超时
     const result = await Promise.race([fn(), timeoutPromise]);
@@ -179,7 +179,7 @@ export function composeApiWrappers<T>(
 ): (fn: () => Promise<T>) => Promise<T> {
   return (fn: () => Promise<T>) => {
     return wrappers.reduceRight((acc, wrapper) => {
-      return () => wrapper(acc);
-    }, fn)();
+      return wrapper(() => acc);
+    }, fn());
   };
 }

@@ -293,7 +293,7 @@ export default function EncryptionSettings() {
       {encryptionEnabled ? (
         <Paper withBorder p="md" radius="md" mb="md">
           <Stack>
-            <Group position="apart">
+            <Group justify="space-between">
               <Text fw={500}>端到端加密</Text>
               <Text color="green">已启用</Text>
             </Group>
@@ -302,7 +302,7 @@ export default function EncryptionSettings() {
               您的数据在发送到服务器之前已加密，只有您知道解密密钥。
             </Text>
 
-            <Group position="apart">
+            <Group justify="space-between">
               <Text fw={500}>加密状态</Text>
               <Text color={encryptionActive ? 'green' : 'yellow'}>
                 {encryptionActive ? '已解锁' : '已锁定'}
@@ -336,7 +336,7 @@ export default function EncryptionSettings() {
 
             <Divider my="sm" />
 
-            <Group position="apart">
+            <Group justify="space-between">
               <Button variant="outline" color="blue" onClick={open}>
                 更改主密码
               </Button>
@@ -358,7 +358,7 @@ export default function EncryptionSettings() {
               启用端到端加密可以保护您的敏感数据，即使在服务器上也是加密的。
             </Alert>
 
-            <Stepper active={setupStep} onStepClick={setSetupStep} breakpoint="sm">
+            <Stepper active={setupStep} onStepClick={setSetupStep}>
               <Stepper.Step label="设置密码" description="创建主密码">
                 <Stack mt="md">
                   <PasswordInput
@@ -418,7 +418,7 @@ export default function EncryptionSettings() {
                     </List>
                   </Alert>
 
-                  <Group position="apart">
+                  <Group justify="space-between">
                     <Button variant="outline" onClick={() => setSetupStep(0)}>
                       返回
                     </Button>
@@ -485,7 +485,7 @@ export default function EncryptionSettings() {
             }
           />
 
-          <Group position="right">
+          <Group justify="flex-end">
             <Button variant="outline" onClick={close}>
               取消
             </Button>

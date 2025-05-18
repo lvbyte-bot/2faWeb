@@ -169,7 +169,7 @@ function OTPDisplay({ account, onEdit, onDelete }: OTPDisplayProps) {
         {showCode ? code : '••••••'}
       </Button>
 
-      <Group mt="xs" position="apart">
+      <Group mt="xs" justify="space-between">
         <Tooltip label={showCode ? '隐藏验证码' : '显示验证码'}>
           <ActionIcon onClick={() => setShowCode(!showCode)}>
             {showCode ? '👁️' : '👁️‍🗨️'}

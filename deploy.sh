@@ -50,19 +50,40 @@ setup_d1_database() {
   if grep -q "database_id = \"placeholder\"" api/wrangler.toml; then
     print_info "创建新的 D1 数据库..."
     DB_RESULT=$(wrangler d1 create 2fa_web_db 2>&1)
+    echo "$DB_RESULT"
 
-    if [[ $DB_RESULT == *"created"* ]]; then
-      # 提取数据库ID
-      DB_ID=$(echo "$DB_RESULT" | grep -o "id: [a-zA-Z0-9-]*" | cut -d' ' -f2)
+    # 使用正则表达式提取ID
+    if [[ $DB_RESULT =~ \"uuid\"\:\ \"([a-zA-Z0-9-]+)\" ]]; then
+      DB_ID="${BASH_REMATCH[1]}"
       print_success "D1 数据库创建成功，ID: $DB_ID"
 
       # 更新wrangler.toml
       sed -i "s/database_id = \"placeholder\"/database_id = \"$DB_ID\"/" api/wrangler.toml
       print_success "已更新 wrangler.toml 中的数据库ID"
     else
-      print_error "创建 D1 数据库失败"
-      echo "$DB_RESULT"
-      exit 1
+      # 尝试从输出中提取ID（备用方法）
+      DB_ID=$(echo "$DB_RESULT" | grep -o '"uuid": "[a-zA-Z0-9-]*"' | grep -o '[a-zA-Z0-9-]\{36\}' || echo "")
+
+      if [[ -n "$DB_ID" ]]; then
+        print_success "D1 数据库创建成功，ID: $DB_ID"
+
+        # 更新wrangler.toml
+        sed -i "s/database_id = \"placeholder\"/database_id = \"$DB_ID\"/" api/wrangler.toml
+        print_success "已更新 wrangler.toml 中的数据库ID"
+      else
+        # 手动输入ID
+        print_warning "无法自动提取D1数据库ID，请从上面的输出中复制ID并输入："
+        read -p "D1数据库ID: " DB_ID
+
+        if [[ -n "$DB_ID" ]]; then
+          # 更新wrangler.toml
+          sed -i "s/database_id = \"placeholder\"/database_id = \"$DB_ID\"/" api/wrangler.toml
+          print_success "已更新 wrangler.toml 中的数据库ID"
+        else
+          print_error "未提供有效的D1数据库ID"
+          exit 1
+        fi
+      fi
     fi
   else
     print_info "使用现有的 D1 数据库配置"
@@ -73,9 +94,19 @@ setup_d1_database() {
   # 初始化数据库表
   print_info "初始化数据库表..."
   cd api
-  # 获取数据库名称
+  # 获取数据库名称和ID
   DB_NAME=$(grep -o "database_name = \"[a-zA-Z0-9_]*\"" wrangler.toml | cut -d'"' -f2)
+  DB_ID=$(grep -o "database_id = \"[a-zA-Z0-9-]*\"" wrangler.toml | cut -d'"' -f2)
+
+  # 检查数据库ID是否为空
+  if [[ -z "$DB_ID" || "$DB_ID" == "placeholder" ]]; then
+    print_error "数据库ID无效，无法初始化数据库表"
+    cd ..
+    exit 1
+  fi
+
   # 执行SQL脚本
+  print_info "使用数据库名称: $DB_NAME, ID: $DB_ID"
   wrangler d1 execute $DB_NAME --file=./migrations/schema.sql
   cd ..
   print_success "数据库表初始化完成"
@@ -89,19 +120,40 @@ setup_kv_namespace() {
   if grep -q "id = \"placeholder\"" api/wrangler.toml; then
     print_info "创建新的 KV 命名空间..."
     KV_RESULT=$(wrangler kv namespace create SESSIONS 2>&1)
+    echo "$KV_RESULT"
 
-    if [[ $KV_RESULT == *"created"* ]]; then
-      # 提取KV命名空间ID
-      KV_ID=$(echo "$KV_RESULT" | grep -o "id: [a-zA-Z0-9-]*" | cut -d' ' -f2)
+    # 使用正则表达式提取ID
+    if [[ $KV_RESULT =~ \"id\"\:\ \"([a-zA-Z0-9-]+)\" ]]; then
+      KV_ID="${BASH_REMATCH[1]}"
       print_success "KV 命名空间创建成功，ID: $KV_ID"
 
       # 更新wrangler.toml
       sed -i "s/id = \"placeholder\"/id = \"$KV_ID\"/" api/wrangler.toml
       print_success "已更新 wrangler.toml 中的KV命名空间ID"
     else
-      print_error "创建 KV 命名空间失败"
-      echo "$KV_RESULT"
-      exit 1
+      # 尝试从输出中提取ID（备用方法）
+      KV_ID=$(echo "$KV_RESULT" | grep -o '"id": "[a-zA-Z0-9-]*"' | grep -o '[a-zA-Z0-9-]\{32\}' || echo "")
+
+      if [[ -n "$KV_ID" ]]; then
+        print_success "KV 命名空间创建成功，ID: $KV_ID"
+
+        # 更新wrangler.toml
+        sed -i "s/id = \"placeholder\"/id = \"$KV_ID\"/" api/wrangler.toml
+        print_success "已更新 wrangler.toml 中的KV命名空间ID"
+      else
+        # 手动输入ID
+        print_warning "无法自动提取KV命名空间ID，请从上面的输出中复制ID并输入："
+        read -p "KV命名空间ID: " KV_ID
+
+        if [[ -n "$KV_ID" ]]; then
+          # 更新wrangler.toml
+          sed -i "s/id = \"placeholder\"/id = \"$KV_ID\"/" api/wrangler.toml
+          print_success "已更新 wrangler.toml 中的KV命名空间ID"
+        else
+          print_error "未提供有效的KV命名空间ID"
+          exit 1
+        fi
+      fi
     fi
   else
     print_info "使用现有的 KV 命名空间配置"
@@ -156,6 +208,15 @@ update_frontend_env() {
   echo "VITE_APP_NAME=2FA Web" >> frontend/.env.production
   echo "VITE_ENABLE_PERFORMANCE_MONITORING=false" >> frontend/.env.production
   echo "VITE_DEBUG_MODE=false" >> frontend/.env.production
+
+  # 确保.env.production不会被git跟踪
+  if ! grep -q "frontend/.env.production" .gitignore 2>/dev/null; then
+    print_info "将 frontend/.env.production 添加到 .gitignore"
+    echo "" >> .gitignore
+    echo "# 本地环境配置文件" >> .gitignore
+    echo "frontend/.env.production" >> .gitignore
+    echo "api/.env" >> .gitignore
+  fi
 
   print_success "前端环境变量已更新"
 }
