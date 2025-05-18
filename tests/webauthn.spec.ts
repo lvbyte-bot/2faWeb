@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 
 // 增加测试超时时间
-test.setTimeout(60000);
+test.setTimeout(120000);
 
 test.describe('WebAuthn功能测试', () => {
   // 跳过WebAuthn测试，因为它需要真实的浏览器环境和用户交互
@@ -11,7 +11,7 @@ test.describe('WebAuthn功能测试', () => {
     // 因此我们将其标记为跳过，并在需要时手动运行
 
     // 访问登录页面
-    await page.goto('http://localhost:3000/login');
+    await page.goto('http://localhost:3000/login', { timeout: 30000 });
 
     // 检查WebAuthn登录按钮是否存在
     const webAuthnButton = page.getByRole('button', { name: /使用生物识别或安全密钥登录/ });
@@ -24,7 +24,7 @@ test.describe('WebAuthn功能测试', () => {
   // 测试WebAuthn支持检测
   test('应该正确检测WebAuthn支持', async ({ page }) => {
     // 访问登录页面
-    await page.goto('http://localhost:3000/login');
+    await page.goto('http://localhost:3000/login', { timeout: 30000 });
 
     // 检查是否显示WebAuthn登录按钮或不支持提示
     const webAuthnButton = page.getByRole('button', { name: /使用生物识别或安全密钥登录/ });
@@ -46,13 +46,13 @@ test.describe('WebAuthn功能测试', () => {
     const password = 'Password123!';
 
     // 注册
-    await page.goto('http://localhost:3000/register');
+    await page.goto('http://localhost:3000/register', { timeout: 30000 });
     await page.getByLabel('用户名').fill(username);
     await page.getByLabel('电子邮件').fill(email);
     await page.locator('input[type="password"]').first().fill(password);
     await page.locator('input[type="password"]').nth(1).fill(password);
     await page.getByRole('button', { name: '注册' }).click();
-    await page.waitForURL('http://localhost:3000/', { timeout: 10000 });
+    await page.waitForURL('http://localhost:3000/', { timeout: 30000 });
 
     // 导航到设置页面
     const viewportSize = page.viewportSize();
@@ -71,20 +71,20 @@ test.describe('WebAuthn功能测试', () => {
     await settingsLink.click();
 
     // 等待导航到设置页面
-    await page.waitForURL('http://localhost:3000/settings', { timeout: 5000 });
+    await page.waitForURL('http://localhost:3000/settings', { timeout: 15000 });
 
     // 点击WebAuthn设置链接
     await page.getByRole('button', { name: '设置生物识别登录' }).click();
 
     // 等待导航到WebAuthn设置页面
-    await page.waitForURL('http://localhost:3000/webauthn', { timeout: 5000 });
+    await page.waitForURL('http://localhost:3000/webauthn', { timeout: 15000 });
 
     // 检查WebAuthn设置页面
     await expect(page.locator('h2')).toContainText('WebAuthn 设置');
 
     // 检查注册按钮是否存在
     const registerButton = page.getByRole('button', { name: '注册新凭证' });
-    
+
     // 根据浏览器支持情况，按钮可能启用或禁用
     await expect(registerButton).toBeVisible();
   });

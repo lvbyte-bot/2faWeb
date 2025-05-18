@@ -14,12 +14,14 @@ import {
   Select,
   NumberInput,
   Tabs,
-  Anchor
+  Anchor,
+  Alert
 } from '@mantine/core';
-import { IconFingerprint, IconList } from '@tabler/icons-react';
+import { IconFingerprint, IconList, IconDevices, IconAlertCircle } from '@tabler/icons-react';
 import { Link } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
 import { useAuth } from '../contexts/AuthContext';
+import * as api from '../services/api';
 
 export default function Settings() {
   const { user } = useAuth();
@@ -60,7 +62,9 @@ export default function Settings() {
   };
 
   // 更改密码
-  const changePassword = () => {
+  const [changingPassword, setChangingPassword] = useState(false);
+
+  const changePassword = async () => {
     if (newPassword !== confirmPassword) {
       notifications.show({
         title: '密码不匹配',
@@ -70,16 +74,38 @@ export default function Settings() {
       return;
     }
 
-    // 在实际应用中，这里应该调用API更改密码
-    notifications.show({
-      title: '密码已更改',
-      message: '您的密码已成功更改',
-      color: 'green',
-    });
+    setChangingPassword(true);
+    try {
+      // 调用API更改密码
+      const response = await api.post('/auth/password/update', {
+        currentPassword,
+        newPassword,
+      });
 
-    setCurrentPassword('');
-    setNewPassword('');
-    setConfirmPassword('');
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.error || '更改密码失败');
+      }
+
+      notifications.show({
+        title: '密码已更改',
+        message: '您的密码已成功更改',
+        color: 'green',
+      });
+
+      setCurrentPassword('');
+      setNewPassword('');
+      setConfirmPassword('');
+    } catch (error) {
+      notifications.show({
+        title: '更改密码失败',
+        message: error instanceof Error ? error.message : '更改密码失败，请稍后重试',
+        color: 'red',
+        icon: <IconAlertCircle size={16} />,
+      });
+    } finally {
+      setChangingPassword(false);
+    }
   };
 
   return (
@@ -206,7 +232,13 @@ export default function Settings() {
                 onChange={(e) => setConfirmPassword(e.currentTarget.value)}
               />
 
-              <Button onClick={changePassword}>更改密码</Button>
+              <Button onClick={changePassword} loading={changingPassword}>更改密码</Button>
+
+              <Divider label="忘记密码？" labelPosition="center" />
+
+              <Button component={Link} to="/reset-password" variant="outline">
+                重置密码
+              </Button>
             </Stack>
           </Paper>
         </Tabs.Panel>
@@ -245,10 +277,17 @@ export default function Settings() {
 
               <div>
                 <Text fw={500}>会话管理</Text>
-                <Text size="xs" c="dimmed" mb="md">管理您的活动会话</Text>
+                <Text size="xs" c="dimmed" mb="md">管理您的活动会话和登录设备</Text>
 
-                <Button variant="outline" fullWidth mb="md">
-                  查看活动会话
+                <Button
+                  component={Link}
+                  to="/sessions"
+                  variant="outline"
+                  fullWidth
+                  mb="md"
+                  leftSection={<IconDevices size={16} />}
+                >
+                  管理活动会话
                 </Button>
               </div>
 

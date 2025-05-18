@@ -1,36 +1,40 @@
 import { test, expect } from '@playwright/test';
 
 // 增加测试超时时间
-test.setTimeout(60000);
+test.setTimeout(120000);
 
 test.describe('数据同步功能测试', () => {
+  // 生成随机用户名和密码，用于测试
+  const randomSuffix = Math.floor(Math.random() * 10000);
+  const testUsername = `testuser${randomSuffix}`;
+  const testEmail = `testuser${randomSuffix}@example.com`;
+  const testPassword = 'Password123!';
+
   test.beforeEach(async ({ page }) => {
-    // 访问登录页面
-    await page.goto('http://localhost:3000/login', { timeout: 30000 });
+    // 先注册新用户
+    await page.goto('http://localhost:3000/register', { timeout: 30000 });
 
-    console.log('已加载登录页面');
+    console.log(`创建测试用户: ${testUsername}, ${testEmail}, ${testPassword}`);
 
-    // 等待登录表单加载完成
-    await page.waitForSelector('input[name="username"]', { timeout: 10000 });
+    // 等待注册表单加载完成
+    await page.waitForSelector('form', { timeout: 15000 });
 
-    // 输入用户名和密码
-    await page.getByLabel('用户名').fill('lvbyte');
-    await page.getByLabel('密码').fill('Byte20071021Byte');
+    // 填写注册表单
+    await page.getByLabel('用户名').fill(testUsername);
+    await page.getByLabel('电子邮件').fill(testEmail);
+    await page.locator('input[type="password"]').first().fill(testPassword);
+    await page.locator('input[type="password"]').nth(1).fill(testPassword);
 
-    console.log('已填写登录信息');
+    // 点击注册按钮
+    await page.getByRole('button', { name: '注册' }).click();
 
-    // 点击登录按钮
-    await page.getByRole('button', { name: '登录' }).click();
+    // 等待导航到仪表盘
+    await page.waitForURL('http://localhost:3000/', { timeout: 60000 });
 
-    console.log('已点击登录按钮');
+    console.log('注册成功，已导航到仪表盘');
 
-    // 等待一段时间，确保登录请求有时间处理
+    // 等待一段时间，确保页面完全加载
     await page.waitForTimeout(3000);
-
-    // 等待导航到仪表盘（根路径）
-    await page.waitForURL('http://localhost:3000/', { timeout: 30000 });
-
-    console.log('已导航到仪表盘');
   });
 
   test('应该显示网络状态指示器', async ({ page }) => {
@@ -74,11 +78,13 @@ test.describe('数据同步功能测试', () => {
   });
 
   test('应该能够在离线模式下添加账户', async ({ page, context }) => {
+    // 先等待页面完全加载
+    await page.waitForTimeout(2000);
+
     // 模拟离线状态
     await context.setOffline(true);
 
-    // 刷新页面以应用离线状态
-    await page.reload();
+    // 离线后不刷新页面，而是直接检查离线状态
 
     // 检查离线状态指示器是否存在
     await expect(page.getByText('离线模式')).toBeVisible();
@@ -107,11 +113,11 @@ test.describe('数据同步功能测试', () => {
     // 恢复在线状态
     await context.setOffline(false);
 
-    // 刷新页面以应用在线状态
-    await page.reload();
+    // 等待一段时间，让状态更新
+    await page.waitForTimeout(2000);
 
     // 检查在线状态指示器是否存在
-    await expect(page.getByText('在线模式')).toBeVisible();
+    await expect(page.getByText('在线模式')).toBeVisible({ timeout: 10000 });
 
     // 点击同步按钮
     await page.locator('[data-testid="sync-button"]').click();

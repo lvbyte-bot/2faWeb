@@ -12,6 +12,7 @@ type Bindings = {
   DB: D1Database;
   SESSIONS: KVNamespace;
   JWT_SECRET: string;
+  FRONTEND_URL: string;
 };
 
 // 创建Hono应用

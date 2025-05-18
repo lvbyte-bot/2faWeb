@@ -4,6 +4,7 @@ compatibility_date = "2023-12-01"
 
 [vars]
 JWT_SECRET = "change_this_in_production"
+FRONTEND_URL = "http://localhost:3000"
 
 [[d1_databases]]
 binding = "DB"

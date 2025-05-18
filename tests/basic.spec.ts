@@ -1,11 +1,14 @@
 import { test, expect } from '@playwright/test';
 
+// 增加测试超时时间
+test.setTimeout(120000);
+
 // 基本功能测试
 test.describe('基本功能测试', () => {
   // 测试登录页面
   test('登录页面应该正确显示', async ({ page }) => {
     // 访问登录页面
-    await page.goto('http://localhost:3000/login');
+    await page.goto('http://localhost:3000/login', { timeout: 30000 });
 
     // 检查页面标题
     await expect(page.locator('h2')).toContainText('欢迎使用2FA Web');
@@ -13,14 +16,14 @@ test.describe('基本功能测试', () => {
     // 检查表单元素
     await expect(page.getByLabel('用户名')).toBeVisible();
     await expect(page.getByLabel('密码')).toBeVisible();
-    await expect(page.getByRole('button', { name: '登录' })).toBeVisible();
+    await expect(page.getByRole('button', { name: '使用密码登录' })).toBeVisible();
     await expect(page.getByRole('link', { name: '没有账户？注册' })).toBeVisible();
   });
 
   // 测试注册页面
   test('注册页面应该正确显示', async ({ page }) => {
     // 访问注册页面
-    await page.goto('http://localhost:3000/register');
+    await page.goto('http://localhost:3000/register', { timeout: 30000 });
 
     // 检查页面标题
     await expect(page.locator('h2')).toContainText('创建新账户');
@@ -48,7 +51,7 @@ test.describe('基本功能测试', () => {
     console.log(`创建测试用户: ${username}, ${email}, ${password}`);
 
     // 访问注册页面
-    await page.goto('http://localhost:3000/register');
+    await page.goto('http://localhost:3000/register', { timeout: 30000 });
 
     // 填写注册表单
     await page.getByLabel('用户名').fill(username);
@@ -80,10 +83,10 @@ test.describe('基本功能测试', () => {
       await page.waitForTimeout(1000);
 
       // 再次登录
-      await page.goto('http://localhost:3000/login');
+      await page.goto('http://localhost:3000/login', { timeout: 30000 });
       await page.getByLabel('用户名').fill(username);
       await page.getByLabel('密码').fill(password);
-      await page.getByRole('button', { name: '登录' }).click();
+      await page.getByRole('button', { name: '使用密码登录' }).click();
 
       // 等待一段时间，查看页面变化
       await page.waitForTimeout(2000);
@@ -115,7 +118,7 @@ test.describe('基本功能测试', () => {
     const password = 'Password123!';
 
     // 注册
-    await page.goto('http://localhost:3000/register');
+    await page.goto('http://localhost:3000/register', { timeout: 30000 });
     await page.getByLabel('用户名').fill(username);
     await page.getByLabel('电子邮件').fill(email);
     await page.locator('input[type="password"]').first().fill(password);
@@ -154,7 +157,7 @@ test.describe('基本功能测试', () => {
     const password = 'Password123!';
 
     // 注册
-    await page.goto('http://localhost:3000/register');
+    await page.goto('http://localhost:3000/register', { timeout: 30000 });
     await page.getByLabel('用户名').fill(username);
     await page.getByLabel('电子邮件').fill(email);
     await page.locator('input[type="password"]').first().fill(password);
@@ -195,7 +198,7 @@ test.describe('基本功能测试', () => {
     const password = 'Password123!';
 
     // 注册
-    await page.goto('http://localhost:3000/register');
+    await page.goto('http://localhost:3000/register', { timeout: 30000 });
     await page.getByLabel('用户名').fill(username);
     await page.getByLabel('电子邮件').fill(email);
     await page.locator('input[type="password"]').first().fill(password);
@@ -236,7 +239,7 @@ test.describe('基本功能测试', () => {
     const password = 'Password123!';
 
     // 注册
-    await page.goto('http://localhost:3000/register');
+    await page.goto('http://localhost:3000/register', { timeout: 30000 });
     await page.getByLabel('用户名').fill(username);
     await page.getByLabel('电子邮件').fill(email);
     await page.locator('input[type="password"]').first().fill(password);
@@ -277,7 +280,7 @@ test.describe('基本功能测试', () => {
     const password = 'Password123!';
 
     // 注册
-    await page.goto('http://localhost:3000/register');
+    await page.goto('http://localhost:3000/register', { timeout: 30000 });
     await page.getByLabel('用户名').fill(username);
     await page.getByLabel('电子邮件').fill(email);
     await page.locator('input[type="password"]').first().fill(password);

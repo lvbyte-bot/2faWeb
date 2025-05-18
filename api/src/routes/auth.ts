@@ -1,10 +1,11 @@
 import { Hono } from 'hono';
 import { zValidator } from '@hono/zod-validator';
 import { z } from 'zod';
-import { userDb, webAuthnDb } from '../models/db';
+import { userDb, webAuthnDb, passwordResetDb, sessionDb } from '../models/db';
 import { hashPassword, verifyPassword } from '../utils/password';
 import { generateToken, verifyToken } from '../utils/jwt';
 import { authMiddleware } from '../middleware/auth';
+import { sendEmail } from '../utils/email';
 import {
   generateWebAuthnRegistrationOptions,
   verifyWebAuthnRegistration,
@@ -22,6 +23,7 @@ type Bindings = {
   DB: D1Database;
   SESSIONS: KVNamespace;
   JWT_SECRET: string;
+  FRONTEND_URL: string; // 前端URL，用于生成重置链接
 };
 
 // 创建路由
@@ -51,6 +53,12 @@ authRoutes.post('/register', zValidator('json', registerSchema), async (c) => {
       return c.json({ error: '用户名已存在' }, 400);
     }
 
+    // 检查邮箱是否已存在
+    const existingEmail = await userDb.findUserByEmail(c.env.DB, email);
+    if (existingEmail) {
+      return c.json({ error: '邮箱已被使用' }, 400);
+    }
+
     // 哈希密码
     const passwordHash = await hashPassword(password);
 
@@ -68,6 +76,24 @@ authRoutes.post('/register', zValidator('json', registerSchema), async (c) => {
       { id: userId, username, email },
       c.env.JWT_SECRET
     );
+
+    // 创建会话记录
+    const sessionId = crypto.randomUUID();
+    const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30天后过期
+
+    // 获取客户端信息
+    const ipAddress = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown';
+    const userAgent = c.req.header('User-Agent') || 'unknown';
+
+    // 保存会话
+    await sessionDb.createSession(c.env.DB, {
+      id: sessionId,
+      user_id: userId,
+      token,
+      ip_address: ipAddress,
+      user_agent: userAgent,
+      expires_at: expiresAt,
+    });
 
     return c.json({
       message: '注册成功',
@@ -106,6 +132,27 @@ authRoutes.post('/login', zValidator('json', loginSchema), async (c) => {
       c.env.JWT_SECRET
     );
 
+    // 创建会话记录
+    const sessionId = crypto.randomUUID();
+    const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30天后过期
+
+    // 获取客户端信息
+    const ipAddress = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown';
+    const userAgent = c.req.header('User-Agent') || 'unknown';
+
+    // 保存会话
+    await sessionDb.createSession(c.env.DB, {
+      id: sessionId,
+      user_id: user.id,
+      token,
+      ip_address: ipAddress,
+      user_agent: userAgent,
+      expires_at: expiresAt,
+    });
+
+    // 清理过期的会话
+    await sessionDb.cleanupExpiredSessions(c.env.DB);
+
     return c.json({
       message: '登录成功',
       user: { id: user.id, username: user.username, email: user.email },
@@ -117,9 +164,28 @@ authRoutes.post('/login', zValidator('json', loginSchema), async (c) => {
   }
 });
 
-// 登出路由 - 客户端只需要删除本地存储的令牌
+// 登出路由
 authRoutes.post('/logout', async (c) => {
-  return c.json({ message: '登出成功' });
+  try {
+    // 获取认证令牌
+    const authHeader = c.req.header('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+
+      // 查找会话
+      const session = await sessionDb.findSessionByToken(c.env.DB, token);
+      if (session) {
+        // 撤销会话
+        await sessionDb.revokeSession(c.env.DB, session.id);
+      }
+    }
+
+    return c.json({ message: '登出成功' });
+  } catch (error) {
+    console.error('登出失败:', error);
+    // 即使出错，也返回成功，因为客户端会删除本地令牌
+    return c.json({ message: '登出成功' });
+  }
 });
 
 // 获取当前用户信息
@@ -367,6 +433,24 @@ authRoutes.post('/webauthn/login/verify', zValidator('json', webAuthnLoginVerify
       c.env.JWT_SECRET
     );
 
+    // 创建会话记录
+    const sessionId = crypto.randomUUID();
+    const expiresAt = Date.now() + 30 * 24 * 60 * 60 * 1000; // 30天后过期
+
+    // 获取客户端信息
+    const ipAddress = c.req.header('CF-Connecting-IP') || c.req.header('X-Forwarded-For') || 'unknown';
+    const userAgent = c.req.header('User-Agent') || 'unknown';
+
+    // 保存会话
+    await sessionDb.createSession(c.env.DB, {
+      id: sessionId,
+      user_id: user.id,
+      token,
+      ip_address: ipAddress,
+      user_agent: userAgent,
+      expires_at: expiresAt,
+    });
+
     return c.json({
       message: 'WebAuthn登录成功',
       user: { id: user.id, username: user.username, email: user.email },
@@ -375,6 +459,244 @@ authRoutes.post('/webauthn/login/verify', zValidator('json', webAuthnLoginVerify
   } catch (error) {
     console.error('WebAuthn登录验证失败:', error);
     return c.json({ error: '登录验证失败' }, 500);
+  }
+});
+
+// 密码重置请求验证模式
+const passwordResetRequestSchema = z.object({
+  email: z.string().email(),
+});
+
+// 密码重置验证模式
+const passwordResetSchema = z.object({
+  token: z.string(),
+  password: z.string().min(8),
+});
+
+// 更新密码验证模式
+const updatePasswordSchema = z.object({
+  currentPassword: z.string(),
+  newPassword: z.string().min(8),
+});
+
+// 请求密码重置路由
+authRoutes.post('/password-reset/request', zValidator('json', passwordResetRequestSchema), async (c) => {
+  const { email } = c.req.valid('json');
+
+  try {
+    // 查找用户
+    const user = await userDb.findUserByEmail(c.env.DB, email);
+    if (!user) {
+      // 即使用户不存在，也返回成功，以防止用户枚举攻击
+      return c.json({ message: '如果该邮箱存在，我们已发送密码重置邮件' });
+    }
+
+    // 生成随机令牌
+    const token = crypto.randomUUID();
+
+    // 设置过期时间（24小时后）
+    const expiresAt = Date.now() + 24 * 60 * 60 * 1000;
+
+    // 保存令牌到数据库
+    const resetTokenId = crypto.randomUUID();
+    await passwordResetDb.createResetToken(c.env.DB, {
+      id: resetTokenId,
+      user_id: user.id,
+      token,
+      expires_at: expiresAt,
+    });
+
+    // 生成重置链接
+    const resetLink = `${c.env.FRONTEND_URL}/reset-password?token=${token}`;
+
+    // 生成邮件内容
+    const emailBody = generatePasswordResetEmail(user.username, resetLink);
+
+    // 发送邮件
+    await sendEmail(email, '2FA Web - 密码重置', emailBody);
+
+    // 清理过期的令牌
+    await passwordResetDb.cleanupExpiredTokens(c.env.DB);
+
+    return c.json({ message: '如果该邮箱存在，我们已发送密码重置邮件' });
+  } catch (error) {
+    console.error('请求密码重置失败:', error);
+    return c.json({ error: '请求密码重置失败，请稍后重试' }, 500);
+  }
+});
+
+// 重置密码路由
+authRoutes.post('/password-reset/reset', zValidator('json', passwordResetSchema), async (c) => {
+  const { token, password } = c.req.valid('json');
+
+  try {
+    // 查找令牌
+    const resetToken = await passwordResetDb.findResetTokenByToken(c.env.DB, token);
+    if (!resetToken) {
+      return c.json({ error: '无效或已过期的令牌' }, 400);
+    }
+
+    // 查找用户
+    const user = await userDb.findUserById(c.env.DB, resetToken.user_id);
+    if (!user) {
+      return c.json({ error: '用户不存在' }, 404);
+    }
+
+    // 哈希新密码
+    const passwordHash = await hashPassword(password);
+
+    // 更新用户密码
+    await userDb.updatePassword(c.env.DB, user.id, passwordHash);
+
+    // 标记令牌为已使用
+    await passwordResetDb.markTokenAsUsed(c.env.DB, resetToken.id);
+
+    // 撤销用户的所有会话
+    await sessionDb.revokeAllSessions(c.env.DB, user.id);
+
+    return c.json({ message: '密码已成功重置，请使用新密码登录' });
+  } catch (error) {
+    console.error('重置密码失败:', error);
+    return c.json({ error: '重置密码失败，请稍后重试' }, 500);
+  }
+});
+
+// 更新密码路由（已登录用户）
+authRoutes.post('/password/update', authMiddleware, zValidator('json', updatePasswordSchema), async (c) => {
+  const { currentPassword, newPassword } = c.req.valid('json');
+  const user = c.get('user');
+
+  try {
+    // 查找用户
+    const dbUser = await userDb.findUserById(c.env.DB, user.id);
+    if (!dbUser) {
+      return c.json({ error: '用户不存在' }, 404);
+    }
+
+    // 验证当前密码
+    const isPasswordValid = await verifyPassword(currentPassword, dbUser.password_hash);
+    if (!isPasswordValid) {
+      return c.json({ error: '当前密码错误' }, 400);
+    }
+
+    // 哈希新密码
+    const passwordHash = await hashPassword(newPassword);
+
+    // 更新用户密码
+    await userDb.updatePassword(c.env.DB, user.id, passwordHash);
+
+    // 撤销用户的所有其他会话
+    const authHeader = c.req.header('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const session = await sessionDb.findSessionByToken(c.env.DB, token);
+      if (session) {
+        await sessionDb.revokeAllSessions(c.env.DB, user.id, session.id);
+      } else {
+        await sessionDb.revokeAllSessions(c.env.DB, user.id);
+      }
+    }
+
+    return c.json({ message: '密码已成功更新' });
+  } catch (error) {
+    console.error('更新密码失败:', error);
+    return c.json({ error: '更新密码失败，请稍后重试' }, 500);
+  }
+});
+
+// 获取用户会话列表
+authRoutes.get('/sessions', authMiddleware, async (c) => {
+  const user = c.get('user');
+
+  try {
+    // 获取用户的所有活跃会话
+    const sessionsResult = await sessionDb.getActiveSessions(c.env.DB, user.id);
+
+    // 转换为前端友好的格式
+    const sessions = sessionsResult.results.map(session => ({
+      id: session.id,
+      ipAddress: session.ip_address,
+      userAgent: session.user_agent,
+      createdAt: session.created_at,
+      lastActive: session.last_active,
+      expiresAt: session.expires_at,
+      isActive: session.is_active === 1,
+      // 标记当前会话
+      isCurrent: false, // 默认为false，下面会更新
+    }));
+
+    // 标记当前会话
+    const authHeader = c.req.header('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const currentSession = await sessionDb.findSessionByToken(c.env.DB, token);
+      if (currentSession) {
+        const currentSessionIndex = sessions.findIndex(s => s.id === currentSession.id);
+        if (currentSessionIndex !== -1) {
+          sessions[currentSessionIndex].isCurrent = true;
+        }
+      }
+    }
+
+    return c.json({ sessions });
+  } catch (error) {
+    console.error('获取会话列表失败:', error);
+    return c.json({ error: '获取会话列表失败' }, 500);
+  }
+});
+
+// 撤销会话
+authRoutes.delete('/sessions/:id', authMiddleware, async (c) => {
+  const user = c.get('user');
+  const sessionId = c.req.param('id');
+
+  try {
+    // 检查是否是当前会话
+    const authHeader = c.req.header('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const currentSession = await sessionDb.findSessionByToken(c.env.DB, token);
+      if (currentSession && currentSession.id === sessionId) {
+        return c.json({ error: '不能撤销当前会话' }, 400);
+      }
+    }
+
+    // 撤销会话
+    await sessionDb.revokeSession(c.env.DB, sessionId);
+
+    return c.json({ message: '会话已撤销' });
+  } catch (error) {
+    console.error('撤销会话失败:', error);
+    return c.json({ error: '撤销会话失败' }, 500);
+  }
+});
+
+// 撤销所有其他会话
+authRoutes.delete('/sessions', authMiddleware, async (c) => {
+  const user = c.get('user');
+
+  try {
+    // 获取当前会话ID
+    const authHeader = c.req.header('Authorization');
+    if (authHeader && authHeader.startsWith('Bearer ')) {
+      const token = authHeader.substring(7);
+      const currentSession = await sessionDb.findSessionByToken(c.env.DB, token);
+      if (currentSession) {
+        // 撤销除当前会话外的所有会话
+        await sessionDb.revokeAllSessions(c.env.DB, user.id, currentSession.id);
+      } else {
+        // 如果找不到当前会话，撤销所有会话
+        await sessionDb.revokeAllSessions(c.env.DB, user.id);
+      }
+    } else {
+      // 如果没有认证头，撤销所有会话
+      await sessionDb.revokeAllSessions(c.env.DB, user.id);
+    }
+
+    return c.json({ message: '所有其他会话已撤销' });
+  } catch (error) {
+    console.error('撤销所有会话失败:', error);
+    return c.json({ error: '撤销所有会话失败' }, 500);
   }
 });
 

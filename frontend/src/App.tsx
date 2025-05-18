@@ -14,6 +14,8 @@ import Settings from './pages/Settings'
 import ImportExport from './pages/ImportExport'
 import WebAuthnSettings from './pages/WebAuthnSettings'
 import WebAuthnCredentials from './pages/WebAuthnCredentials'
+import ResetPassword from './pages/ResetPassword'
+import SessionManagement from './pages/SessionManagement'
 
 // 上下文
 import { AuthProvider, useAuth } from './contexts/AuthContext'
@@ -85,6 +87,7 @@ function App() {
           <Routes>
             <Route path="/login" element={<Login />} />
             <Route path="/register" element={<Register />} />
+            <Route path="/reset-password" element={<ResetPassword />} />
             <Route path="/" element={
               <ProtectedRoute>
                 <Dashboard />
@@ -113,6 +116,11 @@ function App() {
             <Route path="/webauthn/credentials" element={
               <ProtectedRoute>
                 <WebAuthnCredentials />
+              </ProtectedRoute>
+            } />
+            <Route path="/sessions" element={
+              <ProtectedRoute>
+                <SessionManagement />
               </ProtectedRoute>
             } />
             <Route path="*" element={<Navigate to="/" replace />} />

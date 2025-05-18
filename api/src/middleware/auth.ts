@@ -1,5 +1,5 @@
 import { Context, Next } from 'hono';
-import { userDb } from '../models/db';
+import { userDb, sessionDb } from '../models/db';
 import { verifyToken, User } from '../utils/jwt';
 
 // 定义环境变量类型
@@ -36,6 +36,15 @@ export async function authMiddleware(c: Context<{ Bindings: Bindings }>, next: N
     if (!dbUser) {
       return c.json({ error: 'Unauthorized: User not found' }, 401);
     }
+
+    // 检查会话是否有效
+    const session = await sessionDb.findSessionByToken(c.env.DB, token);
+    if (!session) {
+      return c.json({ error: 'Unauthorized: Session expired or invalid' }, 401);
+    }
+
+    // 更新会话最后活跃时间
+    await sessionDb.updateSessionActivity(c.env.DB, session.id);
 
     // 将用户信息添加到请求上下文中
     c.set('user', user);

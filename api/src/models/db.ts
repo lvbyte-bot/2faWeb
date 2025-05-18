@@ -66,11 +66,44 @@ export async function initializeDatabase(db: D1Database): Promise<void> {
       )
     `).run();
 
+    // 创建密码重置令牌表
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS password_reset_tokens (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        token TEXT UNIQUE NOT NULL,
+        expires_at INTEGER NOT NULL,
+        created_at INTEGER NOT NULL,
+        used INTEGER DEFAULT 0,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `).run();
+
+    // 创建会话表
+    await db.prepare(`
+      CREATE TABLE IF NOT EXISTS sessions (
+        id TEXT PRIMARY KEY,
+        user_id TEXT NOT NULL,
+        token TEXT UNIQUE NOT NULL,
+        ip_address TEXT,
+        user_agent TEXT,
+        created_at INTEGER NOT NULL,
+        expires_at INTEGER NOT NULL,
+        last_active INTEGER NOT NULL,
+        is_active INTEGER DEFAULT 1,
+        FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+      )
+    `).run();
+
     // 创建索引
     await db.prepare(`CREATE INDEX IF NOT EXISTS idx_accounts_user_id ON accounts(user_id)`).run();
     await db.prepare(`CREATE INDEX IF NOT EXISTS idx_groups_user_id ON groups(user_id)`).run();
     await db.prepare(`CREATE INDEX IF NOT EXISTS idx_accounts_group_id ON accounts(group_id)`).run();
     await db.prepare(`CREATE INDEX IF NOT EXISTS idx_webauthn_credentials_user_id ON webauthn_credentials(user_id)`).run();
+    await db.prepare(`CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_user_id ON password_reset_tokens(user_id)`).run();
+    await db.prepare(`CREATE INDEX IF NOT EXISTS idx_password_reset_tokens_token ON password_reset_tokens(token)`).run();
+    await db.prepare(`CREATE INDEX IF NOT EXISTS idx_sessions_user_id ON sessions(user_id)`).run();
+    await db.prepare(`CREATE INDEX IF NOT EXISTS idx_sessions_token ON sessions(token)`).run();
 
     console.log('Database schema initialized successfully');
   } catch (error) {
@@ -105,6 +138,13 @@ export const userDb = {
       .first();
   },
 
+  // 根据邮箱查找用户
+  async findUserByEmail(db: D1Database, email: string) {
+    return await db.prepare('SELECT * FROM users WHERE email = ?')
+      .bind(email)
+      .first();
+  },
+
   // 根据ID查找用户
   async findUserById(db: D1Database, id: string) {
     return await db.prepare('SELECT * FROM users WHERE id = ?')
@@ -118,6 +158,51 @@ export const userDb = {
     await db.prepare('UPDATE users SET last_login = ? WHERE id = ?')
       .bind(now, id)
       .run();
+  },
+
+  // 更新用户密码
+  async updatePassword(db: D1Database, id: string, passwordHash: string): Promise<void> {
+    await db.prepare('UPDATE users SET password_hash = ? WHERE id = ?')
+      .bind(passwordHash, id)
+      .run();
+  },
+
+  // 更新用户信息
+  async updateUser(db: D1Database, id: string, updates: {
+    username?: string;
+    email?: string;
+    settings?: string;
+  }): Promise<void> {
+    // 构建更新语句
+    let sql = 'UPDATE users SET';
+    const params: any[] = [];
+    const updateParts: string[] = [];
+
+    // 添加要更新的字段
+    if (updates.username !== undefined) {
+      updateParts.push(' username = ?');
+      params.push(updates.username);
+    }
+    if (updates.email !== undefined) {
+      updateParts.push(' email = ?');
+      params.push(updates.email);
+    }
+    if (updates.settings !== undefined) {
+      updateParts.push(' settings = ?');
+      params.push(updates.settings);
+    }
+
+    // 如果没有要更新的字段，直接返回
+    if (updateParts.length === 0) {
+      return;
+    }
+
+    // 完成SQL语句
+    sql += updateParts.join(',') + ' WHERE id = ?';
+    params.push(id);
+
+    // 执行更新
+    await db.prepare(sql).bind(...params).run();
   }
 };
 
@@ -427,6 +512,127 @@ export const groupDb = {
     // 然后删除分组
     await db.prepare('DELETE FROM groups WHERE id = ? AND user_id = ?')
       .bind(id, userId)
+      .run();
+  }
+};
+
+// 密码重置令牌相关数据库操作
+export const passwordResetDb = {
+  // 创建密码重置令牌
+  async createResetToken(db: D1Database, resetToken: {
+    id: string;
+    user_id: string;
+    token: string;
+    expires_at: number;
+  }): Promise<void> {
+    const now = Date.now();
+    await db.prepare(
+      `INSERT INTO password_reset_tokens (id, user_id, token, expires_at, created_at, used)
+       VALUES (?, ?, ?, ?, ?, 0)`
+    )
+    .bind(resetToken.id, resetToken.user_id, resetToken.token, resetToken.expires_at, now)
+    .run();
+  },
+
+  // 根据令牌查找密码重置记录
+  async findResetTokenByToken(db: D1Database, token: string) {
+    return await db.prepare('SELECT * FROM password_reset_tokens WHERE token = ? AND used = 0 AND expires_at > ?')
+      .bind(token, Date.now())
+      .first();
+  },
+
+  // 标记令牌为已使用
+  async markTokenAsUsed(db: D1Database, id: string): Promise<void> {
+    await db.prepare('UPDATE password_reset_tokens SET used = 1 WHERE id = ?')
+      .bind(id)
+      .run();
+  },
+
+  // 清理过期的令牌
+  async cleanupExpiredTokens(db: D1Database): Promise<void> {
+    const now = Date.now();
+    await db.prepare('DELETE FROM password_reset_tokens WHERE expires_at < ?')
+      .bind(now)
+      .run();
+  }
+};
+
+// 会话相关数据库操作
+export const sessionDb = {
+  // 创建会话
+  async createSession(db: D1Database, session: {
+    id: string;
+    user_id: string;
+    token: string;
+    ip_address?: string;
+    user_agent?: string;
+    expires_at: number;
+  }): Promise<void> {
+    const now = Date.now();
+    await db.prepare(
+      `INSERT INTO sessions (id, user_id, token, ip_address, user_agent, created_at, expires_at, last_active, is_active)
+       VALUES (?, ?, ?, ?, ?, ?, ?, ?, 1)`
+    )
+    .bind(
+      session.id,
+      session.user_id,
+      session.token,
+      session.ip_address || null,
+      session.user_agent || null,
+      now,
+      session.expires_at,
+      now
+    )
+    .run();
+  },
+
+  // 根据令牌查找会话
+  async findSessionByToken(db: D1Database, token: string) {
+    return await db.prepare('SELECT * FROM sessions WHERE token = ? AND is_active = 1 AND expires_at > ?')
+      .bind(token, Date.now())
+      .first();
+  },
+
+  // 获取用户的所有活跃会话
+  async getActiveSessions(db: D1Database, userId: string) {
+    return await db.prepare('SELECT * FROM sessions WHERE user_id = ? AND is_active = 1 AND expires_at > ? ORDER BY last_active DESC')
+      .bind(userId, Date.now())
+      .all();
+  },
+
+  // 更新会话最后活跃时间
+  async updateSessionActivity(db: D1Database, id: string): Promise<void> {
+    const now = Date.now();
+    await db.prepare('UPDATE sessions SET last_active = ? WHERE id = ?')
+      .bind(now, id)
+      .run();
+  },
+
+  // 撤销会话
+  async revokeSession(db: D1Database, id: string): Promise<void> {
+    await db.prepare('UPDATE sessions SET is_active = 0 WHERE id = ?')
+      .bind(id)
+      .run();
+  },
+
+  // 撤销用户的所有会话（除了当前会话）
+  async revokeAllSessions(db: D1Database, userId: string, exceptSessionId?: string): Promise<void> {
+    if (exceptSessionId) {
+      await db.prepare('UPDATE sessions SET is_active = 0 WHERE user_id = ? AND id != ?')
+        .bind(userId, exceptSessionId)
+        .run();
+    } else {
+      await db.prepare('UPDATE sessions SET is_active = 0 WHERE user_id = ?')
+        .bind(userId)
+        .run();
+    }
+  },
+
+  // 清理过期的会话
+  async cleanupExpiredSessions(db: D1Database): Promise<void> {
+    const now = Date.now();
+    await db.prepare('DELETE FROM sessions WHERE expires_at < ?')
+      .bind(now)
       .run();
   }
 };

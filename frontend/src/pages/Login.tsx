@@ -112,6 +112,9 @@ export default function Login() {
             <Anchor component={Link} to="/register" size="sm">
               没有账户？注册
             </Anchor>
+            <Anchor component={Link} to="/reset-password" size="sm">
+              忘记密码？
+            </Anchor>
           </Group>
 
           <Button fullWidth mt="xl" type="submit" loading={loading}>
