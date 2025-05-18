@@ -45,18 +45,40 @@ export default function ImportExport() {
 
   // 解析导入文件
   const parseImportFile = (file: File) => {
+    console.log('开始解析文件:', file.name, file.type, file.size);
     setParseError(null);
     setParsedAccounts([]);
+
+    // 检查文件类型和大小
+    if (file.size === 0) {
+      setParseError('文件为空');
+      return;
+    }
+
+    if (file.size > 10 * 1024 * 1024) { // 10MB限制
+      setParseError('文件太大，请选择小于10MB的文件');
+      return;
+    }
 
     const reader = new FileReader();
 
     reader.onload = async (e) => {
       try {
-        let content = e.target?.result as string;
+        if (!e.target || !e.target.result) {
+          setParseError('读取文件内容失败');
+          return;
+        }
+
+        let content = e.target.result as string;
+        console.log('文件内容长度:', content.length);
 
         // 检查是否是加密的导出文件
+        let isEncrypted = false;
         try {
-          if (encryptionService.isEncryptedExportData(content)) {
+          isEncrypted = encryptionService.isEncryptedExportData(content);
+          console.log('文件是否加密:', isEncrypted);
+
+          if (isEncrypted) {
             if (!importPassword) {
               setParseError('此文件已加密，请提供密码');
               return;
@@ -65,6 +87,7 @@ export default function ImportExport() {
             try {
               // 尝试解密文件
               content = await encryptionService.decryptImportData(content, importPassword);
+              console.log('文件解密成功');
             } catch (decryptError) {
               console.error('解密文件失败:', decryptError);
               setParseError('解密文件失败，可能是密码错误');
@@ -73,26 +96,35 @@ export default function ImportExport() {
           }
         } catch (encryptionCheckError) {
           // 不是加密文件，继续处理
-          console.log('不是加密文件，继续处理');
+          console.log('检查加密状态出错，继续处理:', encryptionCheckError);
         }
 
         // 尝试解析为 JSON
         try {
           const json = JSON.parse(content);
+          console.log('成功解析为JSON');
 
           // 检查是否是 2FA Web 导出文件
           if (Array.isArray(json.accounts)) {
+            console.log('检测到2FA Web导出文件格式');
             setParsedAccounts(json.accounts);
             return;
           }
 
           // 检查是否是 Google Authenticator 导出文件
           if (Array.isArray(json.otpauth_migration_entries)) {
+            console.log('检测到Google Authenticator导出文件格式');
             // 这里需要实现 Google Authenticator 导出文件的解析
             setParseError('Google Authenticator 导出文件解析尚未实现');
             return;
           }
+
+          // 其他JSON格式，但不是我们支持的格式
+          console.log('未知的JSON格式');
+          setParseError('不支持的JSON格式');
         } catch (jsonError) {
+          console.log('不是JSON格式，尝试解析为OTP URI列表');
+
           // 不是 JSON 文件，尝试解析为 otpauth URI 列表
           const lines = content.split(/\r?\n/);
           const accounts: OTPAccount[] = [];
@@ -103,6 +135,7 @@ export default function ImportExport() {
               try {
                 const account = parseOtpUri(trimmedLine);
                 accounts.push(account);
+                console.log('成功解析OTP URI:', trimmedLine.substring(0, 20) + '...');
               } catch (error) {
                 console.error('解析 OTP URI 失败:', error);
               }
@@ -110,30 +143,48 @@ export default function ImportExport() {
           }
 
           if (accounts.length > 0) {
+            console.log('成功解析OTP URI列表，找到账户数:', accounts.length);
             setParsedAccounts(accounts);
             return;
           }
-        }
 
-        setParseError('无法识别的文件格式');
+          // 如果没有找到任何有效的OTP URI，设置错误
+          console.log('未找到有效的OTP URI');
+          setParseError('文件不包含有效的OTP账户数据');
+        }
       } catch (error) {
         console.error('解析文件失败:', error);
-        setParseError('解析文件失败');
+        setParseError('解析文件失败: ' + (error instanceof Error ? error.message : String(error)));
       }
     };
 
-    reader.onerror = () => {
-      setParseError('读取文件失败');
+    reader.onerror = (event) => {
+      console.error('文件读取错误:', event);
+      setParseError('读取文件失败: ' + (event.target?.error?.message || '未知错误'));
     };
 
-    reader.readAsText(file);
+    // 根据文件类型选择读取方式
+    if (file.type === 'application/json' ||
+        file.name.endsWith('.json') ||
+        file.name.endsWith('.txt')) {
+      reader.readAsText(file);
+    } else {
+      // 对于二进制文件，先尝试以文本方式读取
+      reader.readAsText(file);
+    }
   };
 
   // 处理文件选择
   const handleFileChange = (file: File | null) => {
+    console.log('文件选择:', file);
     setImportFile(file);
 
     if (file) {
+      // 清除之前的错误和解析结果
+      setParseError(null);
+      setParsedAccounts([]);
+
+      // 解析文件
       parseImportFile(file);
     } else {
       setParsedAccounts([]);
@@ -324,9 +375,12 @@ export default function ImportExport() {
               <FileInput
                 label="选择导入文件"
                 placeholder="点击选择文件"
-                accept=".json,.txt,.bin"
+                accept=".json,.txt,.bin,.png,.jpg,.jpeg"
                 value={importFile}
                 onChange={handleFileChange}
+                clearable
+                description="支持JSON、文本文件和二维码图片"
+                error={parseError}
               />
 
               {parseError && (
