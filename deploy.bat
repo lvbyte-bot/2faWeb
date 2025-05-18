@@ -72,10 +72,10 @@ if %ERRORLEVEL% equ 0 (
             )
         )
     )
-    
+
     if defined DB_ID (
         call :print_success "D1 数据库创建成功，ID: !DB_ID!"
-        
+
         :: 更新wrangler.toml
         powershell -Command "(Get-Content api\wrangler.toml) -replace 'database_id = \"placeholder\"', 'database_id = \"!DB_ID!\"' | Set-Content api\wrangler.toml"
         call :print_success "已更新 wrangler.toml 中的数据库ID"
@@ -94,7 +94,12 @@ if %ERRORLEVEL% equ 0 (
 :: 初始化数据库表
 call :print_info "初始化数据库表..."
 cd api
-wrangler d1 execute 2fa_web_db --file=./migrations/schema.sql
+:: 获取数据库名称
+for /f "tokens=3 delims=\" %%a in ('findstr /C:"database_name" wrangler.toml') do (
+    set "DB_NAME=%%~a"
+)
+:: 执行SQL脚本
+wrangler d1 execute !DB_NAME! --file=./migrations/schema.sql
 cd ..
 call :print_success "数据库表初始化完成"
 
@@ -105,7 +110,7 @@ call :print_info "设置 KV 命名空间..."
 findstr /C:"id = \"placeholder\"" api\wrangler.toml >nul
 if %ERRORLEVEL% equ 0 (
     call :print_info "创建新的 KV 命名空间..."
-    for /f "tokens=*" %%a in ('wrangler kv:namespace create "SESSIONS" 2^>^&1') do (
+    for /f "tokens=*" %%a in ('wrangler kv namespace create SESSIONS 2^>^&1') do (
         set "KV_RESULT=%%a"
         echo !KV_RESULT! | findstr /C:"created" >nul
         if !ERRORLEVEL! equ 0 (
@@ -114,10 +119,10 @@ if %ERRORLEVEL% equ 0 (
             )
         )
     )
-    
+
     if defined KV_ID (
         call :print_success "KV 命名空间创建成功，ID: !KV_ID!"
-        
+
         :: 更新wrangler.toml
         powershell -Command "(Get-Content api\wrangler.toml) -replace 'id = \"placeholder\"', 'id = \"!KV_ID!\"' | Set-Content api\wrangler.toml"
         call :print_success "已更新 wrangler.toml 中的KV命名空间ID"
@@ -144,7 +149,7 @@ if %ERRORLEVEL% equ 0 (
         set "JWT_SECRET=%%a"
     )
     call :print_success "生成了新的JWT密钥"
-    
+
     :: 更新wrangler.toml
     powershell -Command "(Get-Content api\wrangler.toml) -replace 'JWT_SECRET = \"change_this_in_production\"', 'JWT_SECRET = \"!JWT_SECRET!\"' | Set-Content api\wrangler.toml"
     call :print_success "已更新 wrangler.toml 中的JWT密钥"
