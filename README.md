@@ -44,8 +44,40 @@
    ```
 
 3. 配置环境变量:
-   - 复制`api/.env.example`为`api/.env`并填写必要的环境变量
-   - 复制`frontend/.env.example`为`frontend/.env`并填写必要的环境变量
+   - 复制`api/.env.example`为`api/.env`并填写必要的环境变量:
+     ```
+     # JWT密钥，用于签名和验证JWT令牌
+     JWT_SECRET=your_secure_jwt_secret_here
+
+     # 前端URL，用于CORS设置
+     FRONTEND_URL=http://localhost:3000
+
+     # 数据库ID，从Cloudflare D1获取
+     DB_ID=your_d1_database_id
+
+     # KV命名空间ID，从Cloudflare KV获取
+     SESSIONS_KV_ID=your_kv_namespace_id
+
+     # WebAuthn设置
+     WEBAUTHN_RP_ID=localhost
+     WEBAUTHN_RP_NAME=2FA Web
+     WEBAUTHN_RP_ORIGIN=http://localhost:3000
+     ```
+
+   - 复制`frontend/.env.example`为`frontend/.env`并填写必要的环境变量:
+     ```
+     # API URL，用于连接后端
+     VITE_API_URL=http://localhost:8787
+
+     # 应用名称
+     VITE_APP_NAME=2FA Web
+
+     # 是否启用性能监控（开发环境）
+     VITE_ENABLE_PERFORMANCE_MONITORING=true
+
+     # 是否启用调试模式
+     VITE_DEBUG_MODE=false
+     ```
 
 ### 开发
 
