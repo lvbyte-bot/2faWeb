@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, memo } from 'react';
 import {
   Card,
   Text,
@@ -13,6 +13,7 @@ import {
 import { notifications } from '@mantine/notifications';
 import type { OTPAccount } from '@/types';
 import { generateOTP, getRemainingSeconds } from '../utils/otp';
+import { usePerformanceMonitoring } from '../utils/performance';
 
 interface OTPDisplayProps {
   account: OTPAccount;
@@ -20,13 +21,15 @@ interface OTPDisplayProps {
   onDelete: (id: string) => void;
 }
 
-export default function OTPDisplay({ account, onEdit, onDelete }: OTPDisplayProps) {
+function OTPDisplay({ account, onEdit, onDelete }: OTPDisplayProps) {
+  const performance = usePerformanceMonitoring('OTPDisplay');
   const [code, setCode] = useState<string>('');
   const [timeRemaining, setTimeRemaining] = useState<number>(30);
   const [showCode, setShowCode] = useState<boolean>(true);
 
   // 生成 OTP 码
-  const generateCode = () => {
+  const generateCode = useCallback(() => {
+    const perfId = performance.start();
     try {
       // 生成新的 OTP 码
       const newCode = generateOTP(account);
@@ -39,11 +42,14 @@ export default function OTPDisplay({ account, onEdit, onDelete }: OTPDisplayProp
     } catch (error) {
       console.error('生成 OTP 码失败:', error);
       setCode('错误');
+    } finally {
+      performance.end(perfId);
     }
-  };
+  }, [account, performance]);
 
   // 复制代码到剪贴板
-  const copyToClipboard = () => {
+  const copyToClipboard = useCallback(() => {
+    const perfId = performance.start();
     navigator.clipboard.writeText(code).then(
       () => {
         notifications.show({
@@ -51,6 +57,7 @@ export default function OTPDisplay({ account, onEdit, onDelete }: OTPDisplayProp
           message: '验证码已复制到剪贴板',
           color: 'green',
         });
+        performance.end(perfId);
       },
       () => {
         notifications.show({
@@ -58,13 +65,15 @@ export default function OTPDisplay({ account, onEdit, onDelete }: OTPDisplayProp
           message: '无法复制验证码',
           color: 'red',
         });
+        performance.end(perfId);
       }
     );
-  };
+  }, [code, performance]);
 
   // 增加 HOTP 计数器
-  const incrementCounter = async () => {
+  const incrementCounter = useCallback(async () => {
     if (account.type === 'HOTP' && account.counter !== undefined) {
+      const perfId = performance.start();
       // 这里应该调用 API 更新计数器
       // 暂时只在本地更新
       onEdit({
@@ -74,13 +83,16 @@ export default function OTPDisplay({ account, onEdit, onDelete }: OTPDisplayProp
 
       // 生成新的 OTP 码
       generateCode();
+      performance.end(perfId);
     }
-  };
+  }, [account, onEdit, generateCode, performance]);
 
   // 初始生成 OTP 码
   useEffect(() => {
+    const perfId = performance.start();
     generateCode();
-  }, [account]);
+    performance.end(perfId);
+  }, [generateCode]);
 
   // TOTP 倒计时
   useEffect(() => {
@@ -97,22 +109,22 @@ export default function OTPDisplay({ account, onEdit, onDelete }: OTPDisplayProp
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [account]);
+  }, [account.type, account.period, generateCode]);
 
   // 获取进度条颜色
-  const getProgressColor = () => {
+  const getProgressColor = useCallback(() => {
     if (account.type !== 'TOTP') return 'blue';
 
     if (timeRemaining < 5) return 'red';
     if (timeRemaining < 10) return 'orange';
     return 'blue';
-  };
+  }, [account.type, timeRemaining]);
 
   // 获取进度百分比
-  const getProgressValue = () => {
+  const getProgressValue = useCallback(() => {
     if (account.type !== 'TOTP' || !account.period) return 0;
     return (timeRemaining / account.period) * 100;
-  };
+  }, [account.type, account.period, timeRemaining]);
 
   return (
     <Card withBorder shadow="sm" radius="md" p="md">
@@ -190,3 +202,15 @@ export default function OTPDisplay({ account, onEdit, onDelete }: OTPDisplayProp
     </Card>
   );
 }
+
+// 使用React.memo包装组件，避免不必要的重渲染
+export default memo(OTPDisplay, (prevProps, nextProps) => {
+  // 只有当账户数据发生变化时才重新渲染
+  return (
+    prevProps.account.id === nextProps.account.id &&
+    prevProps.account.name === nextProps.account.name &&
+    prevProps.account.issuer === nextProps.account.issuer &&
+    prevProps.account.type === nextProps.account.type &&
+    prevProps.account.counter === nextProps.account.counter
+  );
+});

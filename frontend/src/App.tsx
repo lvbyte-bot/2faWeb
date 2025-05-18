@@ -1,10 +1,14 @@
 import { Routes, Route, Navigate } from 'react-router-dom'
-import { AppShell, Burger, Group, Text, Button, Box, useMantineTheme } from '@mantine/core'
+import { AppShell, Burger, Group, Text, Button, Box, useMantineTheme, Loader } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
+import { lazy, Suspense } from 'react'
 
 // 组件
 import NavMenu from './components/NavMenu'
 import EncryptionStatus from './components/EncryptionStatus'
+
+// 懒加载性能监控组件
+const PerformanceMonitor = lazy(() => import('./components/PerformanceMonitor'))
 
 // 页面组件
 import Dashboard from './pages/Dashboard'
@@ -86,6 +90,9 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
 }
 
 function App() {
+  // 判断是否为开发环境
+  const isDevelopment = process.env.NODE_ENV === 'development';
+
   return (
     <AuthProvider>
       <AccountProvider>
@@ -141,6 +148,13 @@ function App() {
             } />
             <Route path="*" element={<Navigate to="/" replace />} />
           </Routes>
+
+          {/* 仅在开发环境中显示性能监控组件 */}
+          {isDevelopment && (
+            <Suspense fallback={null}>
+              <PerformanceMonitor />
+            </Suspense>
+          )}
         </AppLayout>
       </AccountProvider>
     </AuthProvider>

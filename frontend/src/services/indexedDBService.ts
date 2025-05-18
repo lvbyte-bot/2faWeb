@@ -1,8 +1,6 @@
 import type { OTPAccount } from '@/types';
-
-// 数据库名称和版本
-const DB_NAME = '2faWebDB';
-const DB_VERSION = 1;
+import { executeTransaction, executeBatchOperation, initConnectionPool } from './indexedDBPool';
+import { startMark, endMark } from '../utils/performance';
 
 // 存储对象名称
 const ACCOUNTS_STORE = 'accounts';
@@ -21,212 +19,164 @@ export interface SyncedAccount extends OTPAccount {
   syncStatus: SyncStatus; // 同步状态
 }
 
-// 打开数据库连接
-async function openDB(): Promise<IDBDatabase> {
-  return new Promise((resolve, reject) => {
-    const request = indexedDB.open(DB_NAME, DB_VERSION);
-
-    request.onerror = () => {
-      reject(new Error('无法打开IndexedDB数据库'));
-    };
-
-    request.onsuccess = () => {
-      resolve(request.result);
-    };
-
-    request.onupgradeneeded = (event) => {
-      const db = request.result;
-
-      // 创建账户存储
-      if (!db.objectStoreNames.contains(ACCOUNTS_STORE)) {
-        const accountStore = db.createObjectStore(ACCOUNTS_STORE, { keyPath: 'id' });
-        accountStore.createIndex('syncStatus', 'syncStatus', { unique: false });
-        accountStore.createIndex('lastModified', 'lastModified', { unique: false });
-      }
-
-      // 创建同步信息存储
-      if (!db.objectStoreNames.contains(SYNC_STORE)) {
-        const syncStore = db.createObjectStore(SYNC_STORE, { keyPath: 'key' });
-      }
-    };
-  });
+// 初始化IndexedDB
+export async function initializeIndexedDB(): Promise<void> {
+  const perfId = startMark('initializeIndexedDB');
+  try {
+    await initConnectionPool();
+    endMark(perfId, 'initializeIndexedDB');
+  } catch (error) {
+    console.error('初始化IndexedDB失败:', error);
+    endMark(perfId, 'initializeIndexedDB');
+    throw error;
+  }
 }
 
 // 保存账户到本地数据库
 export async function saveAccount(account: SyncedAccount): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(ACCOUNTS_STORE, 'readwrite');
-    const store = transaction.objectStore(ACCOUNTS_STORE);
+  const perfId = startMark('saveAccount');
+  try {
+    await executeTransaction(ACCOUNTS_STORE, 'readwrite', (store) => {
+      return store.put(account);
+    });
+    endMark(perfId, 'saveAccount');
+  } catch (error) {
+    console.error(`保存账户 ${account.id} 到本地数据库失败:`, error);
+    endMark(perfId, 'saveAccount');
+    throw new Error(`保存账户 ${account.id} 到本地数据库失败`);
+  }
+}
 
-    const request = store.put(account);
+// 批量保存账户到本地数据库
+export async function saveAccounts(accounts: SyncedAccount[]): Promise<void> {
+  if (accounts.length === 0) return;
 
-    request.onsuccess = () => {
-      resolve();
-    };
-
-    request.onerror = () => {
-      reject(new Error(`保存账户 ${account.id} 到本地数据库失败`));
-    };
-
-    transaction.oncomplete = () => {
-      db.close();
-    };
-  });
+  const perfId = startMark('saveAccounts');
+  try {
+    await executeBatchOperation(ACCOUNTS_STORE, 'readwrite', (store) => {
+      return accounts.map(account => store.put(account));
+    });
+    endMark(perfId, 'saveAccounts');
+  } catch (error) {
+    console.error(`批量保存 ${accounts.length} 个账户到本地数据库失败:`, error);
+    endMark(perfId, 'saveAccounts');
+    throw new Error(`批量保存账户到本地数据库失败`);
+  }
 }
 
 // 从本地数据库获取所有账户
 export async function getAllLocalAccounts(): Promise<SyncedAccount[]> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(ACCOUNTS_STORE, 'readonly');
-    const store = transaction.objectStore(ACCOUNTS_STORE);
-    const request = store.getAll();
-
-    request.onsuccess = () => {
-      resolve(request.result);
-    };
-
-    request.onerror = () => {
-      reject(new Error('从本地数据库获取账户失败'));
-    };
-
-    transaction.oncomplete = () => {
-      db.close();
-    };
-  });
+  const perfId = startMark('getAllLocalAccounts');
+  try {
+    const result = await executeTransaction<SyncedAccount[]>(ACCOUNTS_STORE, 'readonly', (store) => {
+      return store.getAll();
+    });
+    endMark(perfId, 'getAllLocalAccounts');
+    return result || [];
+  } catch (error) {
+    console.error('从本地数据库获取所有账户失败:', error);
+    endMark(perfId, 'getAllLocalAccounts');
+    throw new Error('从本地数据库获取所有账户失败');
+  }
 }
 
 // 从本地数据库获取单个账户
 export async function getLocalAccount(id: string): Promise<SyncedAccount | null> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(ACCOUNTS_STORE, 'readonly');
-    const store = transaction.objectStore(ACCOUNTS_STORE);
-    const request = store.get(id);
-
-    request.onsuccess = () => {
-      resolve(request.result || null);
-    };
-
-    request.onerror = () => {
-      reject(new Error(`从本地数据库获取账户 ${id} 失败`));
-    };
-
-    transaction.oncomplete = () => {
-      db.close();
-    };
-  });
+  const perfId = startMark('getLocalAccount');
+  try {
+    const result = await executeTransaction<SyncedAccount | undefined>(ACCOUNTS_STORE, 'readonly', (store) => {
+      return store.get(id);
+    });
+    endMark(perfId, 'getLocalAccount');
+    return result || null;
+  } catch (error) {
+    console.error(`从本地数据库获取账户 ${id} 失败:`, error);
+    endMark(perfId, 'getLocalAccount');
+    throw new Error(`从本地数据库获取账户 ${id} 失败`);
+  }
 }
 
 // 从本地数据库删除账户
 export async function deleteLocalAccount(id: string): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(ACCOUNTS_STORE, 'readwrite');
-    const store = transaction.objectStore(ACCOUNTS_STORE);
-    const request = store.delete(id);
-
-    request.onsuccess = () => {
-      resolve();
-    };
-
-    request.onerror = () => {
-      reject(new Error(`从本地数据库删除账户 ${id} 失败`));
-    };
-
-    transaction.oncomplete = () => {
-      db.close();
-    };
-  });
+  const perfId = startMark('deleteLocalAccount');
+  try {
+    await executeTransaction(ACCOUNTS_STORE, 'readwrite', (store) => {
+      return store.delete(id);
+    });
+    endMark(perfId, 'deleteLocalAccount');
+  } catch (error) {
+    console.error(`从本地数据库删除账户 ${id} 失败:`, error);
+    endMark(perfId, 'deleteLocalAccount');
+    throw new Error(`从本地数据库删除账户 ${id} 失败`);
+  }
 }
 
 // 获取待同步的账户
 export async function getPendingSyncAccounts(): Promise<SyncedAccount[]> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(ACCOUNTS_STORE, 'readonly');
-    const store = transaction.objectStore(ACCOUNTS_STORE);
-    const index = store.index('syncStatus');
-    const request = index.getAll(SyncStatus.PENDING);
-
-    request.onsuccess = () => {
-      resolve(request.result);
-    };
-
-    request.onerror = () => {
-      reject(new Error('获取待同步账户失败'));
-    };
-
-    transaction.oncomplete = () => {
-      db.close();
-    };
-  });
+  const perfId = startMark('getPendingSyncAccounts');
+  try {
+    const result = await executeTransaction<SyncedAccount[]>(ACCOUNTS_STORE, 'readonly', (store) => {
+      const index = store.index('syncStatus');
+      return index.getAll(SyncStatus.PENDING);
+    });
+    endMark(perfId, 'getPendingSyncAccounts');
+    return result || [];
+  } catch (error) {
+    console.error('获取待同步账户失败:', error);
+    endMark(perfId, 'getPendingSyncAccounts');
+    throw new Error('获取待同步账户失败');
+  }
 }
 
 // 保存最后同步时间
 export async function saveLastSyncTime(timestamp: number): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(SYNC_STORE, 'readwrite');
-    const store = transaction.objectStore(SYNC_STORE);
-    const request = store.put({ key: 'lastSyncTime', value: timestamp });
-
-    request.onsuccess = () => {
-      resolve();
-    };
-
-    request.onerror = () => {
-      reject(new Error('保存最后同步时间失败'));
-    };
-
-    transaction.oncomplete = () => {
-      db.close();
-    };
-  });
+  const perfId = startMark('saveLastSyncTime');
+  try {
+    await executeTransaction(SYNC_STORE, 'readwrite', (store) => {
+      return store.put({ key: 'lastSyncTime', value: timestamp });
+    });
+    endMark(perfId, 'saveLastSyncTime');
+  } catch (error) {
+    console.error('保存最后同步时间失败:', error);
+    endMark(perfId, 'saveLastSyncTime');
+    throw new Error('保存最后同步时间失败');
+  }
 }
 
 // 获取最后同步时间
 export async function getLastSyncTime(): Promise<number> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction(SYNC_STORE, 'readonly');
-    const store = transaction.objectStore(SYNC_STORE);
-    const request = store.get('lastSyncTime');
-
-    request.onsuccess = () => {
-      resolve(request.result?.value || 0);
-    };
-
-    request.onerror = () => {
-      reject(new Error('获取最后同步时间失败'));
-    };
-
-    transaction.oncomplete = () => {
-      db.close();
-    };
-  });
+  const perfId = startMark('getLastSyncTime');
+  try {
+    const result = await executeTransaction<{ key: string; value: number } | undefined>(SYNC_STORE, 'readonly', (store) => {
+      return store.get('lastSyncTime');
+    });
+    endMark(perfId, 'getLastSyncTime');
+    return result?.value || 0;
+  } catch (error) {
+    console.error('获取最后同步时间失败:', error);
+    endMark(perfId, 'getLastSyncTime');
+    throw new Error('获取最后同步时间失败');
+  }
 }
 
 // 清除所有本地数据
 export async function clearLocalData(): Promise<void> {
-  const db = await openDB();
-  return new Promise((resolve, reject) => {
-    const transaction = db.transaction([ACCOUNTS_STORE, SYNC_STORE], 'readwrite');
-    
-    const accountsStore = transaction.objectStore(ACCOUNTS_STORE);
-    const syncStore = transaction.objectStore(SYNC_STORE);
-    
-    accountsStore.clear();
-    syncStore.clear();
+  const perfId = startMark('clearLocalData');
+  try {
+    // 清除账户数据
+    await executeTransaction(ACCOUNTS_STORE, 'readwrite', (store) => {
+      return store.clear();
+    });
 
-    transaction.oncomplete = () => {
-      db.close();
-      resolve();
-    };
+    // 清除同步数据
+    await executeTransaction(SYNC_STORE, 'readwrite', (store) => {
+      return store.clear();
+    });
 
-    transaction.onerror = () => {
-      reject(new Error('清除本地数据失败'));
-    };
-  });
+    endMark(perfId, 'clearLocalData');
+  } catch (error) {
+    console.error('清除本地数据失败:', error);
+    endMark(perfId, 'clearLocalData');
+    throw new Error('清除本地数据失败');
+  }
 }

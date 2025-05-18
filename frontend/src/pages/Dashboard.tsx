@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import {
   Container,
   Title,
@@ -21,8 +21,10 @@ import { useAccounts } from '../contexts/AccountContext';
 import OTPDisplay from '../components/OTPDisplay';
 import AccountForm from '../components/AccountForm';
 import type { OTPAccount } from '../types';
+import { usePerformanceMonitoring } from '../utils/performance';
 
 export default function Dashboard() {
+  const performance = usePerformanceMonitoring('Dashboard');
   const { user } = useAuth();
   const {
     accounts,
@@ -38,24 +40,31 @@ export default function Dashboard() {
   const [editingAccount, setEditingAccount] = useState<OTPAccount | null>(null);
 
   // 处理编辑账户
-  const handleEdit = (account: OTPAccount) => {
+  const handleEdit = useCallback((account: OTPAccount) => {
+    const perfId = performance.start();
     setEditingAccount(account);
     open();
-  };
+    performance.end(perfId);
+  }, [open, performance]);
 
   // 处理添加账户
-  const handleAdd = () => {
+  const handleAdd = useCallback(() => {
+    const perfId = performance.start();
     setEditingAccount(null);
     open();
-  };
+    performance.end(perfId);
+  }, [open, performance]);
 
   // 处理删除账户
-  const handleDelete = (id: string) => {
+  const handleDelete = useCallback((id: string) => {
+    const perfId = performance.start();
     deleteAccount(id);
-  };
+    performance.end(perfId);
+  }, [deleteAccount, performance]);
 
   // 处理表单提交
-  const handleSubmit = (values: Omit<OTPAccount, 'id'>) => {
+  const handleSubmit = useCallback((values: Omit<OTPAccount, 'id'>) => {
+    const perfId = performance.start();
     if (editingAccount) {
       // 更新现有账户
       updateAccount(editingAccount.id, values);
@@ -63,9 +72,40 @@ export default function Dashboard() {
       // 创建新账户
       createAccount(values);
     }
-
     close();
-  };
+    performance.end(perfId);
+  }, [editingAccount, updateAccount, createAccount, close, performance]);
+
+  // 使用useMemo优化同步按钮
+  const syncButton = useMemo(() => (
+    <Tooltip label="同步数据">
+      <ActionIcon
+        variant="light"
+        color="blue"
+        onClick={() => {
+          const perfId = performance.start();
+          syncData().finally(() => performance.end(perfId));
+        }}
+        disabled={!isOnline}
+        data-testid="sync-button"
+      >
+        <IconRefresh size={18} />
+      </ActionIcon>
+    </Tooltip>
+  ), [isOnline, syncData, performance]);
+
+  // 使用useMemo优化网络状态显示
+  const networkStatus = useMemo(() => (
+    isOnline ? (
+      <Badge color="green" leftSection={<IconWifi size={14} />}>
+        在线模式
+      </Badge>
+    ) : (
+      <Badge color="yellow" leftSection={<IconWifiOff size={14} />}>
+        离线模式
+      </Badge>
+    )
+  ), [isOnline]);
 
   return (
     <Container size="lg" py="xl">
@@ -75,27 +115,8 @@ export default function Dashboard() {
         </Title>
 
         <Group>
-          {isOnline ? (
-            <Badge color="green" leftSection={<IconWifi size={14} />}>
-              在线模式
-            </Badge>
-          ) : (
-            <Badge color="yellow" leftSection={<IconWifiOff size={14} />}>
-              离线模式
-            </Badge>
-          )}
-
-          <Tooltip label="同步数据">
-            <ActionIcon
-              variant="light"
-              color="blue"
-              onClick={syncData}
-              disabled={!isOnline}
-              data-testid="sync-button"
-            >
-              <IconRefresh size={18} />
-            </ActionIcon>
-          </Tooltip>
+          {networkStatus}
+          {syncButton}
         </Group>
       </Group>
 
