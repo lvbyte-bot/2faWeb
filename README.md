@@ -32,7 +32,7 @@
 
 1. 克隆仓库:
    ```
-   git clone https://github.com/yourusername/2fa-web.git
+   git clone https://github.com/lvbyte-bot/2fa-web.git
    cd 2fa-web
    ```
 
@@ -368,8 +368,6 @@ npm run deploy
 以下是未来计划实现的功能：
 
 - [ ] 多语言支持
-- [ ] 高级数据分析和安全审计
-- [ ] 企业级功能（团队管理、共享账户等）
 - [ ] 移动应用集成
 - [ ] 更多认证方式支持
 - [ ] 高级备份策略（自动备份、云存储集成等）
