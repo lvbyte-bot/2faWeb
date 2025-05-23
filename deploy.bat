@@ -157,8 +157,12 @@ if %ERRORLEVEL% equ 0 (
     )
     call :print_success "生成了新的JWT密钥"
 
-    :: 更新wrangler.toml
-    powershell -Command "(Get-Content api\wrangler.toml) -replace 'JWT_SECRET = \"change_this_in_production\"', 'JWT_SECRET = \"!JWT_SECRET!\"' | Set-Content api\wrangler.toml"
+    :: 使用临时文件更新wrangler.toml，避免特殊字符问题
+    set "TEMP_TOML=%TEMP%\wrangler_temp.toml"
+    type api\wrangler.toml > "%TEMP_TOML%"
+    powershell -Command "(Get-Content -Path '%TEMP_TOML%') | ForEach-Object { $_ -replace 'JWT_SECRET = \"change_this_in_production\"', 'JWT_SECRET = \"!JWT_SECRET!\"' } | Set-Content -Path '%TEMP_TOML%'"
+    copy /Y "%TEMP_TOML%" api\wrangler.toml > nul
+    del "%TEMP_TOML%" 2>nul
     call :print_success "已更新 wrangler.toml 中的JWT密钥"
 ) else (
     call :print_info "使用现有的JWT密钥配置"
@@ -167,19 +171,44 @@ if %ERRORLEVEL% equ 0 (
 :: 部署API
 call :print_info "部署后端API..."
 cd api
-call npm run deploy
+
+:: 创建临时文件存储部署输出
+set "TEMP_OUTPUT=%TEMP%\deploy_output.txt"
+call npm run deploy > "%TEMP_OUTPUT%" 2>&1
+type "%TEMP_OUTPUT%"
+
 if %ERRORLEVEL% neq 0 (
     call :print_error "API部署失败"
     exit /b 1
 )
 
-:: 获取API URL
-for /f "tokens=*" %%a in ('wrangler whoami ^| findstr /C:"https://"') do (
+:: 从部署输出中提取URL
+for /f "tokens=*" %%a in ('findstr /C:"https://" "%TEMP_OUTPUT%" ^| findstr /C:".workers.dev"') do (
     set "API_URL=%%a"
 )
+
+:: 清理临时文件
+del "%TEMP_OUTPUT%" 2>nul
+
+:: 如果无法从部署输出获取URL，尝试从wrangler.toml获取
 if not defined API_URL (
-    set "API_URL=https://2fa-web-api.your-account.workers.dev"
+    :: 获取Worker名称
+    for /f "tokens=3 delims=\" %%a in ('findstr /C:"name = " wrangler.toml') do (
+        set "WORKER_NAME=%%~a"
+    )
+
+    :: 获取账户ID
+    for /f "tokens=3 delims=\" %%a in ('findstr /C:"account_id = " wrangler.toml') do (
+        set "ACCOUNT_ID=%%~a"
+    )
+
+    if defined WORKER_NAME if defined ACCOUNT_ID (
+        set "API_URL=https://!WORKER_NAME!.!ACCOUNT_ID!.workers.dev"
+    ) else (
+        set "API_URL=https://2fa-web-api.workers.dev"
+    )
 )
+
 cd ..
 call :print_success "API部署成功: !API_URL!"
 
@@ -187,7 +216,7 @@ call :print_success "API部署成功: !API_URL!"
 call :print_info "更新前端环境变量..."
 
 :: 创建.env.production文件
-echo VITE_API_URL=!API_URL!> frontend\.env.production
+echo VITE_API_URL=!API_URL!/api> frontend\.env.production
 echo VITE_APP_NAME=2FA Web>> frontend\.env.production
 echo VITE_ENABLE_PERFORMANCE_MONITORING=false>> frontend\.env.production
 echo VITE_DEBUG_MODE=false>> frontend\.env.production

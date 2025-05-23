@@ -1,7 +1,5 @@
 import type { OTPAccount } from '@/types';
-
-// API 基础 URL
-const API_BASE_URL = '/api';
+import { API_BASE_URL } from '../config';
 
 // 获取认证头
 function getAuthHeaders(): HeadersInit {

@@ -2,8 +2,8 @@
  * 应用配置
  */
 
-// API基础URL
-export const API_BASE_URL = '/api';
+// API基础URL - 从环境变量中获取，或使用相对路径
+export const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
 
 // 应用版本
 export const APP_VERSION = '1.0.0';
@@ -17,14 +17,14 @@ export const DEFAULT_SETTINGS = {
     groupByIssuer: false,
     darkMode: false,
   },
-  
+
   // 安全设置
   security: {
     autoLockTimeout: 5 * 60 * 1000, // 5分钟自动锁定
     hideSecrets: true,
     confirmBeforeDelete: true,
   },
-  
+
   // 同步设置
   sync: {
     autoSync: true,

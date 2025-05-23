@@ -8,6 +8,9 @@ import '@mantine/notifications/styles.css'
 import './index.css'
 import App from './App'
 
+// 输出环境变量，用于调试
+console.log('API URL:', import.meta.env.VITE_API_URL);
+
 // 初始化性能监控
 import { initializeIndexedDB } from './services/indexedDBService'
 import { setCacheConfig } from './services/apiCache'

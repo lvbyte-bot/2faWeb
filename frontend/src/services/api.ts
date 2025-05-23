@@ -3,7 +3,8 @@ import { withCache, generateCacheKey } from './apiCache';
 import { withRetry, withTimeout, composeApiWrappers } from './apiRetry';
 
 // API 基础 URL
-const API_BASE_URL = '/api';
+const API_BASE_URL = import.meta.env.VITE_API_URL || '/api';
+console.log('Using API URL:', API_BASE_URL);
 
 // 默认缓存时间（毫秒）
 const DEFAULT_CACHE_TTL = 5 * 60 * 1000; // 5分钟

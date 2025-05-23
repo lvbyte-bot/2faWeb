@@ -2,9 +2,7 @@ import { createContext, useContext, useState, useEffect } from 'react';
 import type { ReactNode } from 'react';
 import { notifications } from '@mantine/notifications';
 import * as webAuthnService from '../services/webAuthnService';
-
-// API 基础 URL
-const API_BASE_URL = '/api';
+import { API_BASE_URL } from '../config';
 
 // 用户类型
 interface User {

@@ -172,8 +172,14 @@ setup_jwt_secret() {
     JWT_SECRET=$(openssl rand -base64 32)
     print_success "生成了新的JWT密钥"
 
-    # 更新wrangler.toml
-    sed -i "s/JWT_SECRET = \"change_this_in_production\"/JWT_SECRET = \"$JWT_SECRET\"/" api/wrangler.toml
+    # 更新wrangler.toml，处理MacOS和Linux的sed差异
+    if [[ "$(uname)" == "Darwin" ]]; then
+      # MacOS需要空的-i参数
+      sed -i "" "s/JWT_SECRET = \"change_this_in_production\"/JWT_SECRET = \"$JWT_SECRET\"/" api/wrangler.toml
+    else
+      # Linux版本
+      sed -i "s/JWT_SECRET = \"change_this_in_production\"/JWT_SECRET = \"$JWT_SECRET\"/" api/wrangler.toml
+    fi
     print_success "已更新 wrangler.toml 中的JWT密钥"
   else
     print_info "使用现有的JWT密钥配置"
@@ -184,15 +190,34 @@ setup_jwt_secret() {
 deploy_api() {
   print_info "部署后端API..."
   cd api
-  npm run deploy
 
+  # 捕获部署输出
+  DEPLOY_OUTPUT=$(npm run deploy 2>&1)
+  echo "$DEPLOY_OUTPUT"
+
+  # 检查部署是否成功
   if [ $? -ne 0 ]; then
     print_error "API部署失败"
     exit 1
   fi
 
-  # 获取API URL
-  API_URL=$(wrangler whoami | grep -o "https://[a-zA-Z0-9-]*.workers.dev" || echo "https://2fa-web-api.your-account.workers.dev")
+  # 从输出中提取完整的URL
+  API_URL=$(echo "$DEPLOY_OUTPUT" | grep -o "https://[a-zA-Z0-9.-]*.workers.dev" | tail -1)
+
+  # 如果无法从部署输出获取URL，尝试其他方法
+  if [ -z "$API_URL" ]; then
+    # 尝试从wrangler.toml获取
+    WORKER_NAME=$(grep -o "name = \"[a-zA-Z0-9-]*\"" wrangler.toml | cut -d'"' -f2)
+    ACCOUNT_ID=$(grep -o "account_id = \"[a-zA-Z0-9-]*\"" wrangler.toml | cut -d'"' -f2)
+
+    if [ -n "$WORKER_NAME" ] && [ -n "$ACCOUNT_ID" ]; then
+      API_URL="https://$WORKER_NAME.$ACCOUNT_ID.workers.dev"
+    else
+      # 最后的备用选项
+      API_URL="https://2fa-web-api.workers.dev"
+    fi
+  fi
+
   cd ..
   print_success "API部署成功: $API_URL"
 
@@ -204,7 +229,7 @@ update_frontend_env() {
   print_info "更新前端环境变量..."
 
   # 创建.env.production文件
-  echo "VITE_API_URL=$API_URL" > frontend/.env.production
+  echo "VITE_API_URL=$API_URL/api" > frontend/.env.production
   echo "VITE_APP_NAME=2FA Web" >> frontend/.env.production
   echo "VITE_ENABLE_PERFORMANCE_MONITORING=false" >> frontend/.env.production
   echo "VITE_DEBUG_MODE=false" >> frontend/.env.production
