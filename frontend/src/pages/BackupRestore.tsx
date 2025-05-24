@@ -25,8 +25,10 @@ import * as backupService from '../services/backupService';
 import * as keyManagement from '../services/keyManagementService';
 import * as cryptoUtils from '../utils/crypto';
 import { BACKUP_SETTINGS } from '../config';
+import { useTranslation } from 'react-i18next';
 
 export default function BackupRestore() {
+  const { t } = useTranslation();
   // 备份状态
   const [isCreatingBackup, setIsCreatingBackup] = useState(false);
   const [backupPassword, setBackupPassword] = useState('');
@@ -61,8 +63,8 @@ export default function BackupRestore() {
     if (encryptBackup && !useEncryptionPassword) {
       if (!backupPassword) {
         notifications.show({
-          title: '错误',
-          message: '请输入密码',
+          title: t('common.error'),
+          message: t('backup.pleaseEnterPassword'),
           color: 'red',
         });
         return;
@@ -70,8 +72,8 @@ export default function BackupRestore() {
 
       if (backupPassword !== confirmBackupPassword) {
         notifications.show({
-          title: '错误',
-          message: '两次输入的密码不匹配',
+          title: t('common.error'),
+          message: t('auth.passwordMismatch'),
           color: 'red',
         });
         return;
@@ -79,7 +81,7 @@ export default function BackupRestore() {
 
       if (passwordStrength.score < 40) {
         const confirm = window.confirm(
-          '您的密码强度较弱，这可能会降低备份的安全性。确定要继续吗？'
+          t('backup.weakPasswordConfirmation')
         );
         if (!confirm) return;
       }
@@ -106,8 +108,8 @@ export default function BackupRestore() {
       }
 
       notifications.show({
-        title: '成功',
-        message: '备份已创建并下载',
+        title: t('common.success'),
+        message: t('backup.backupCreatedAndDownloaded'),
         color: 'green',
       });
 
@@ -116,8 +118,8 @@ export default function BackupRestore() {
       setConfirmBackupPassword('');
     } catch (error) {
       notifications.show({
-        title: '备份失败',
-        message: error instanceof Error ? error.message : '创建备份失败',
+        title: t('backup.backupFailed'),
+        message: error instanceof Error ? error.message : t('backup.createBackupFailed'),
         color: 'red',
       });
     } finally {
@@ -141,7 +143,7 @@ export default function BackupRestore() {
         if (error instanceof Error && error.message.includes('已加密')) {
           setParseError(error.message);
         } else {
-          setParseError(error instanceof Error ? error.message : '无法解析备份文件');
+          setParseError(error instanceof Error ? error.message : t('backup.cannotParseBackupFile'));
         }
       }
     }
@@ -151,8 +153,8 @@ export default function BackupRestore() {
   const handleParseEncrypted = async () => {
     if (!backupFile || !restorePassword) {
       notifications.show({
-        title: '错误',
-        message: '请选择文件并输入密码',
+        title: t('common.error'),
+        message: t('backup.selectFileAndEnterPassword'),
         color: 'red',
       });
       return;
@@ -163,7 +165,7 @@ export default function BackupRestore() {
       setParsedBackup(backup);
       setParseError(null);
     } catch (error) {
-      setParseError(error instanceof Error ? error.message : '解析备份文件失败');
+      setParseError(error instanceof Error ? error.message : t('backup.parseBackupFileFailed'));
     }
   };
 
@@ -171,8 +173,8 @@ export default function BackupRestore() {
   const handleRestoreBackup = async () => {
     if (!parsedBackup) {
       notifications.show({
-        title: '错误',
-        message: '没有有效的备份数据',
+        title: t('common.error'),
+        message: t('backup.noValidBackupData'),
         color: 'red',
       });
       return;
@@ -181,8 +183,8 @@ export default function BackupRestore() {
     // 验证备份数据格式
     if (!parsedBackup.accounts || !Array.isArray(parsedBackup.accounts) || parsedBackup.accounts.length === 0) {
       notifications.show({
-        title: '错误',
-        message: '备份数据格式无效或不包含任何账户',
+        title: t('common.error'),
+        message: t('backup.invalidFormatOrNoAccounts'),
         color: 'red',
       });
       return;
@@ -190,8 +192,8 @@ export default function BackupRestore() {
 
     if (!parsedBackup.version || !parsedBackup.timestamp) {
       notifications.show({
-        title: '错误',
-        message: '备份数据缺少版本信息或时间戳',
+        title: t('common.error'),
+        message: t('backup.missingVersionOrTimestamp'),
         color: 'red',
       });
       return;
@@ -200,7 +202,7 @@ export default function BackupRestore() {
     setIsRestoring(true);
 
     try {
-      console.log('开始恢复备份:', {
+      console.log(t('backup.startingRestore'), {
         accountsCount: parsedBackup.accounts.length,
         hasGroups: !!parsedBackup.groups && parsedBackup.groups.length > 0,
         hasSettings: !!parsedBackup.settings && Object.keys(parsedBackup.settings).length > 0,
@@ -212,13 +214,15 @@ export default function BackupRestore() {
         mergeSettings,
       });
 
-      console.log('恢复备份成功:', result);
+      console.log(t('backup.restoreSuccessLog'), result);
 
       notifications.show({
-        title: '恢复成功',
-        message: `已恢复 ${result.restored.accounts} 个账户、${result.restored.groups} 个分组${
-          result.restored.settings ? '和用户设置' : ''
-        }`,
+        title: t('backup.restoreSuccess'),
+        message: t('backup.restoredItems', {
+          accounts: result.restored.accounts,
+          groups: result.restored.groups,
+          settings: result.restored.settings ? t('backup.andSettings') : ''
+        }),
         color: 'green',
       });
 
@@ -227,11 +231,11 @@ export default function BackupRestore() {
       setParsedBackup(null);
       setRestorePassword('');
     } catch (error) {
-      console.error('恢复备份失败:', error);
+      console.error(t('backup.restoreFailedLog'), error);
 
       notifications.show({
-        title: '恢复失败',
-        message: error instanceof Error ? error.message : '恢复备份失败',
+        title: t('backup.restoreFailed'),
+        message: error instanceof Error ? error.message : t('backup.restoreBackupFailed'),
         color: 'red',
       });
     } finally {
@@ -242,20 +246,20 @@ export default function BackupRestore() {
   return (
     <Container size="md" py="xl">
       <Title order={2} mb="md">
-        备份与恢复
+        {t('backup.title')}
       </Title>
 
       <Text c="dimmed" mb="xl">
-        创建应用数据备份或从备份文件恢复
+        {t('backup.description')}
       </Text>
 
       <Tabs defaultValue="backup">
         <Tabs.List mb="md">
           <Tabs.Tab value="backup" leftSection={<IconDatabase size={16} />}>
-            创建备份
+            {t('backup.createBackup')}
           </Tabs.Tab>
           <Tabs.Tab value="restore" leftSection={<IconUpload size={16} />}>
-            恢复备份
+            {t('backup.restoreBackup')}
           </Tabs.Tab>
         </Tabs.List>
 
@@ -263,22 +267,22 @@ export default function BackupRestore() {
           <Paper withBorder p="md" radius="md">
             <Stack>
               <Text>
-                创建应用数据的完整备份，包括所有账户、分组和设置。
+                {t('backup.createBackupDescription')}
               </Text>
 
-              <Alert icon={<IconAlertCircle size={16} />} title="安全提示" color="blue">
-                强烈建议对备份文件进行加密，以保护您的敏感数据。
+              <Alert icon={<IconAlertCircle size={16} />} title={t('backup.securityTip')} color="blue">
+                {t('backup.encryptionRecommendation')}
               </Alert>
 
               <Checkbox
-                label="加密备份文件（推荐）"
+                label={t('backup.encryptBackupFile')}
                 checked={encryptBackup}
                 onChange={(e) => setEncryptBackup(e.currentTarget.checked)}
               />
 
               {encryptBackup && keyManagement.isEncryptionSet() && (
                 <Checkbox
-                  label="使用当前加密密码（如果已解锁）"
+                  label={t('backup.useCurrentEncryptionPassword')}
                   checked={useEncryptionPassword}
                   onChange={(e) => setUseEncryptionPassword(e.currentTarget.checked)}
                   disabled={!keyManagement.hasActiveEncryptionSession()}
@@ -288,8 +292,8 @@ export default function BackupRestore() {
               {encryptBackup && (!useEncryptionPassword || !keyManagement.isEncryptionSet()) && (
                 <>
                   <PasswordInput
-                    label="备份密码"
-                    placeholder="输入强密码保护您的备份"
+                    label={t('backup.backupPassword')}
+                    placeholder={t('backup.enterStrongPassword')}
                     value={backupPassword}
                     onChange={(e) => handlePasswordChange(e.currentTarget.value)}
                   />
@@ -313,14 +317,14 @@ export default function BackupRestore() {
                       </Text>
 
                       <PasswordInput
-                        label="确认密码"
-                        placeholder="再次输入密码"
+                        label={t('backup.confirmPassword')}
+                        placeholder={t('backup.reenterPassword')}
                         value={confirmBackupPassword}
                         onChange={(e) => setConfirmBackupPassword(e.currentTarget.value)}
                         error={
                           confirmBackupPassword &&
                           backupPassword !== confirmBackupPassword
-                            ? '密码不匹配'
+                            ? t('auth.passwordMismatch')
                             : undefined
                         }
                       />
@@ -340,7 +344,7 @@ export default function BackupRestore() {
                     backupPassword !== confirmBackupPassword)
                 }
               >
-                创建并下载备份
+                {t('backup.createAndDownload')}
               </Button>
             </Stack>
           </Paper>
@@ -350,16 +354,16 @@ export default function BackupRestore() {
           <Paper withBorder p="md" radius="md">
             <Stack>
               <Text>
-                从备份文件恢复应用数据。
+                {t('backup.restoreDescription')}
               </Text>
 
-              <Alert icon={<IconAlertCircle size={16} />} title="注意" color="yellow">
-                恢复备份将添加备份中的账户和分组，可以选择是否覆盖现有数据。
+              <Alert icon={<IconAlertCircle size={16} />} title={t('common.notice')} color="yellow">
+                {t('backup.restoreWarning')}
               </Alert>
 
               <FileInput
-                label="选择备份文件"
-                placeholder="点击选择文件"
+                label={t('backup.selectBackupFile')}
+                placeholder={t('backup.clickToSelectFile')}
                 accept=".json"
                 value={backupFile}
                 onChange={handleFileChange}
@@ -369,20 +373,20 @@ export default function BackupRestore() {
               {parseError && parseError.includes('已加密') && (
                 <>
                   <PasswordInput
-                    label="备份密码"
-                    placeholder="输入备份文件的密码"
+                    label={t('backup.backupPassword')}
+                    placeholder={t('backup.enterBackupPassword')}
                     value={restorePassword}
                     onChange={(e) => setRestorePassword(e.currentTarget.value)}
                   />
 
                   <Button onClick={handleParseEncrypted} disabled={!restorePassword || !backupFile}>
-                    解密备份
+                    {t('backup.decryptBackup')}
                   </Button>
                 </>
               )}
 
               {parseError && !parseError.includes('已加密') && (
-                <Alert color="red" title="解析错误">
+                <Alert color="red" title={t('backup.parseError')}>
                   {parseError}
                 </Alert>
               )}
@@ -394,31 +398,31 @@ export default function BackupRestore() {
                       <ThemeIcon color="green" variant="light">
                         <IconCheck size={16} />
                       </ThemeIcon>
-                      <Text fw={500}>备份解析成功</Text>
+                      <Text fw={500}>{t('backup.parseSuccess')}</Text>
                     </Group>
 
                     <Text size="sm">
-                      备份版本: {parsedBackup.version}
+                      {t('backup.backupVersion')}: {parsedBackup.version}
                     </Text>
                     <Text size="sm">
-                      创建时间: {new Date(parsedBackup.timestamp).toLocaleString()}
+                      {t('backup.createdTime')}: {new Date(parsedBackup.timestamp).toLocaleString()}
                     </Text>
                     <Text size="sm">
-                      包含 {parsedBackup.accounts.length} 个账户
-                      {parsedBackup.groups ? `、${parsedBackup.groups.length} 个分组` : ''}
-                      {parsedBackup.settings ? '和用户设置' : ''}
+                      {t('backup.contains', { accounts: parsedBackup.accounts.length })}
+                      {parsedBackup.groups ? t('backup.containsGroups', { groups: parsedBackup.groups.length }) : ''}
+                      {parsedBackup.settings ? t('backup.containsSettings') : ''}
                     </Text>
 
                     <Divider my="xs" />
 
                     <Checkbox
-                      label="覆盖现有数据（如果存在相同名称的账户或分组）"
+                      label={t('backup.overwriteExisting')}
                       checked={overwriteExisting}
                       onChange={(e) => setOverwriteExisting(e.currentTarget.checked)}
                     />
 
                     <Checkbox
-                      label="合并用户设置（而不是完全替换）"
+                      label={t('backup.mergeSettings')}
                       checked={mergeSettings}
                       onChange={(e) => setMergeSettings(e.currentTarget.checked)}
                     />
@@ -428,7 +432,7 @@ export default function BackupRestore() {
                       loading={isRestoring}
                       color="green"
                     >
-                      恢复备份
+                      {t('backup.restoreBackup')}
                     </Button>
                   </Stack>
                 </Card>

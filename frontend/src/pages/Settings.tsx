@@ -22,9 +22,11 @@ import { Link } from 'react-router-dom';
 import { notifications } from '@mantine/notifications';
 import { useAuth } from '../contexts/AuthContext';
 import * as api from '../services/api';
+import { useTranslation } from 'react-i18next';
 
 export default function Settings() {
   const { user } = useAuth();
+  const { t } = useTranslation();
 
   // 用户设置
   const [autoLock, setAutoLock] = useState(true);
@@ -45,8 +47,8 @@ export default function Settings() {
   const saveUserSettings = () => {
     // 在实际应用中，这里应该调用API保存设置
     notifications.show({
-      title: '设置已保存',
-      message: '您的偏好设置已成功更新',
+      title: t('settings.settingsSaved'),
+      message: t('settings.preferencesUpdated'),
       color: 'green',
     });
   };
@@ -55,8 +57,8 @@ export default function Settings() {
   const updateAccount = () => {
     // 在实际应用中，这里应该调用API更新账户信息
     notifications.show({
-      title: '账户已更新',
-      message: '您的账户信息已成功更新',
+      title: t('settings.accountUpdated'),
+      message: t('settings.accountInfoUpdated'),
       color: 'green',
     });
   };
@@ -67,8 +69,8 @@ export default function Settings() {
   const changePassword = async () => {
     if (newPassword !== confirmPassword) {
       notifications.show({
-        title: '密码不匹配',
-        message: '新密码和确认密码不匹配',
+        title: t('auth.passwordMismatch'),
+        message: t('settings.passwordsDoNotMatch'),
         color: 'red',
       });
       return;
@@ -84,12 +86,12 @@ export default function Settings() {
 
       if (!response.ok) {
         const data = await response.json();
-        throw new Error(data.error || '更改密码失败');
+        throw new Error(data.error || t('settings.passwordChangeFailed'));
       }
 
       notifications.show({
-        title: '密码已更改',
-        message: '您的密码已成功更改',
+        title: t('settings.passwordChanged'),
+        message: t('settings.passwordChangedSuccess'),
         color: 'green',
       });
 
@@ -98,8 +100,8 @@ export default function Settings() {
       setConfirmPassword('');
     } catch (error) {
       notifications.show({
-        title: '更改密码失败',
-        message: error instanceof Error ? error.message : '更改密码失败，请稍后重试',
+        title: t('settings.passwordChangeFailed'),
+        message: error instanceof Error ? error.message : t('settings.passwordChangeFailedRetry'),
         color: 'red',
         icon: <IconAlertCircle size={16} />,
       });
@@ -111,18 +113,18 @@ export default function Settings() {
   return (
     <Container size="md" py="xl">
       <Title order={2} mb="md">
-        设置
+        {t('settings.title')}
       </Title>
 
       <Text c="dimmed" mb="xl">
-        自定义您的2FA Web体验
+        {t('settings.customizeExperience')}
       </Text>
 
       <Tabs defaultValue="preferences">
         <Tabs.List mb="md">
-          <Tabs.Tab value="preferences">偏好设置</Tabs.Tab>
-          <Tabs.Tab value="account">账户设置</Tabs.Tab>
-          <Tabs.Tab value="security">安全设置</Tabs.Tab>
+          <Tabs.Tab value="preferences">{t('settings.preferences')}</Tabs.Tab>
+          <Tabs.Tab value="account">{t('settings.accountSettings')}</Tabs.Tab>
+          <Tabs.Tab value="security">{t('settings.securitySettings')}</Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="preferences">
@@ -130,15 +132,15 @@ export default function Settings() {
             <Stack>
               <Group justify="space-between">
                 <div>
-                  <Text fw={500}>自动锁定</Text>
-                  <Text size="xs" c="dimmed">在一段时间不活动后自动锁定应用</Text>
+                  <Text fw={500}>{t('settings.autoLock')}</Text>
+                  <Text size="xs" c="dimmed">{t('settings.autoLockDescription')}</Text>
                 </div>
                 <Switch checked={autoLock} onChange={(e) => setAutoLock(e.currentTarget.checked)} />
               </Group>
 
               {autoLock && (
                 <NumberInput
-                  label="锁定超时（分钟）"
+                  label={t('settings.lockTimeout')}
                   value={lockTimeout}
                   onChange={(value) => setLockTimeout(Number(value))}
                   min={1}
@@ -150,8 +152,8 @@ export default function Settings() {
 
               <Group justify="space-between">
                 <div>
-                  <Text fw={500}>隐藏OTP码</Text>
-                  <Text size="xs" c="dimmed">默认隐藏OTP码，点击显示</Text>
+                  <Text fw={500}>{t('settings.hideOtpCodes')}</Text>
+                  <Text size="xs" c="dimmed">{t('settings.hideOtpCodesDescription')}</Text>
                 </div>
                 <Switch checked={hideOtpCodes} onChange={(e) => setHideOtpCodes(e.currentTarget.checked)} />
               </Group>
@@ -159,8 +161,8 @@ export default function Settings() {
               <Divider />
 
               <Select
-                label="默认算法"
-                description="新账户的默认哈希算法"
+                label={t('settings.defaultAlgorithm')}
+                description={t('settings.defaultAlgorithmDescription')}
                 data={[
                   { value: 'SHA1', label: 'SHA1' },
                   { value: 'SHA256', label: 'SHA256' },
@@ -171,26 +173,26 @@ export default function Settings() {
               />
 
               <Select
-                label="默认位数"
-                description="新账户的默认OTP码位数"
+                label={t('settings.defaultDigits')}
+                description={t('settings.defaultDigitsDescription')}
                 data={[
-                  { value: '6', label: '6位' },
-                  { value: '8', label: '8位' },
+                  { value: '6', label: t('settings.digits', { count: 6 }) },
+                  { value: '8', label: t('settings.digits', { count: 8 }) },
                 ]}
                 value={String(defaultDigits)}
                 onChange={(value) => setDefaultDigits(Number(value) || 6)}
               />
 
               <NumberInput
-                label="默认周期（秒）"
-                description="新TOTP账户的默认周期"
+                label={t('settings.defaultPeriod')}
+                description={t('settings.defaultPeriodDescription')}
                 value={defaultPeriod}
                 onChange={(value) => setDefaultPeriod(Number(value))}
                 min={10}
                 max={120}
               />
 
-              <Button onClick={saveUserSettings}>保存设置</Button>
+              <Button onClick={saveUserSettings}>{t('settings.saveSettings')}</Button>
             </Stack>
           </Paper>
         </Tabs.Panel>
@@ -199,45 +201,45 @@ export default function Settings() {
           <Paper withBorder p="md" radius="md">
             <Stack>
               <TextInput
-                label="用户名"
+                label={t('auth.username')}
                 value={username}
                 onChange={(e) => setUsername(e.currentTarget.value)}
               />
 
               <TextInput
-                label="电子邮件"
+                label={t('auth.email')}
                 value={email}
                 onChange={(e) => setEmail(e.currentTarget.value)}
               />
 
-              <Button onClick={updateAccount}>更新账户信息</Button>
+              <Button onClick={updateAccount}>{t('settings.updateAccountInfo')}</Button>
 
-              <Divider label="更改密码" labelPosition="center" />
+              <Divider label={t('settings.changePassword')} labelPosition="center" />
 
               <PasswordInput
-                label="当前密码"
+                label={t('settings.currentPassword')}
                 value={currentPassword}
                 onChange={(e) => setCurrentPassword(e.currentTarget.value)}
               />
 
               <PasswordInput
-                label="新密码"
+                label={t('settings.newPassword')}
                 value={newPassword}
                 onChange={(e) => setNewPassword(e.currentTarget.value)}
               />
 
               <PasswordInput
-                label="确认新密码"
+                label={t('settings.confirmNewPassword')}
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.currentTarget.value)}
               />
 
-              <Button onClick={changePassword} loading={changingPassword}>更改密码</Button>
+              <Button onClick={changePassword} loading={changingPassword}>{t('settings.changePassword')}</Button>
 
-              <Divider label="忘记密码？" labelPosition="center" />
+              <Divider label={t('auth.forgotPassword')} labelPosition="center" />
 
               <Button component={Link} to="/reset-password" variant="outline">
-                重置密码
+                {t('auth.resetPassword')}
               </Button>
             </Stack>
           </Paper>
@@ -247,8 +249,8 @@ export default function Settings() {
           <Paper withBorder p="md" radius="md">
             <Stack>
               <div>
-                <Text fw={500}>WebAuthn身份验证</Text>
-                <Text size="xs" c="dimmed" mb="md">使用生物识别或安全密钥进行身份验证</Text>
+                <Text fw={500}>{t('settings.webauthnAuth')}</Text>
+                <Text size="xs" c="dimmed" mb="md">{t('settings.webauthnDescription')}</Text>
 
                 <Button
                   component={Link}
@@ -258,7 +260,7 @@ export default function Settings() {
                   mb="md"
                   leftSection={<IconFingerprint size={16} />}
                 >
-                  设置生物识别登录
+                  {t('settings.setupBiometricLogin')}
                 </Button>
 
                 <Button
@@ -269,15 +271,15 @@ export default function Settings() {
                   mb="md"
                   leftSection={<IconList size={16} />}
                 >
-                  管理生物识别凭证
+                  {t('settings.manageBiometricCredentials')}
                 </Button>
               </div>
 
               <Divider />
 
               <div>
-                <Text fw={500}>会话管理</Text>
-                <Text size="xs" c="dimmed" mb="md">管理您的活动会话和登录设备</Text>
+                <Text fw={500}>{t('sessions.title')}</Text>
+                <Text size="xs" c="dimmed" mb="md">{t('settings.sessionManagementDescription')}</Text>
 
                 <Button
                   component={Link}
@@ -287,18 +289,18 @@ export default function Settings() {
                   mb="md"
                   leftSection={<IconDevices size={16} />}
                 >
-                  管理活动会话
+                  {t('settings.manageActiveSessions')}
                 </Button>
               </div>
 
               <Divider />
 
               <div>
-                <Text fw={500} c="red">危险区域</Text>
-                <Text size="xs" c="dimmed" mb="md">这些操作不可逆</Text>
+                <Text fw={500} c="red">{t('settings.dangerZone')}</Text>
+                <Text size="xs" c="dimmed" mb="md">{t('settings.dangerZoneDescription')}</Text>
 
                 <Button color="red" variant="outline" fullWidth>
-                  删除账户
+                  {t('settings.deleteAccount')}
                 </Button>
               </div>
             </Stack>

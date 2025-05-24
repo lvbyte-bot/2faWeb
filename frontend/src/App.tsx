@@ -2,10 +2,12 @@ import { Routes, Route, Navigate } from 'react-router-dom'
 import { AppShell, Burger, Group, Text, Button, Box, useMantineTheme, Loader } from '@mantine/core'
 import { useDisclosure } from '@mantine/hooks'
 import { lazy, Suspense } from 'react'
+import { useTranslation } from 'react-i18next'
 
 // 组件
 import NavMenu from './components/NavMenu'
 import EncryptionStatus from './components/EncryptionStatus'
+import LanguageSwitcher from './components/LanguageSwitcher'
 
 // 懒加载性能监控组件
 const PerformanceMonitor = lazy(() => import('./components/PerformanceMonitor'))
@@ -44,6 +46,7 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
   const [opened, { toggle }] = useDisclosure()
   const { isAuthenticated, logout } = useAuth()
   const theme = useMantineTheme()
+  const { t } = useTranslation()
 
   return (
     <AppShell
@@ -59,14 +62,14 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
         <Group h="100%" px="md" justify="space-between">
           <Group>
             <Burger opened={opened} onClick={toggle} hiddenFrom="sm" size="sm" />
-            <Text size="lg" fw={700}>2FA Web</Text>
+            <Text size="lg" fw={700}>{t('common.appName')}</Text>
           </Group>
 
           {isAuthenticated && (
             <Group>
               <EncryptionStatus />
               <Button variant="subtle" onClick={logout}>
-                退出登录
+                {t('common.logout')}
               </Button>
             </Group>
           )}
@@ -76,8 +79,12 @@ const AppLayout = ({ children }: { children: React.ReactNode }) => {
       {isAuthenticated && (
         <AppShell.Navbar p="md">
           <Box>
-            <Text fw={500} size="sm" mb="xs">主菜单</Text>
+            <Text fw={500} size="sm" mb="xs">{t('menu.mainMenu')}</Text>
             <NavMenu />
+            <Box mt="xl">
+              <Text fw={500} size="sm" mb="xs">{t('settings.language')}</Text>
+              <LanguageSwitcher />
+            </Box>
           </Box>
         </AppShell.Navbar>
       )}

@@ -7,6 +7,33 @@ function getAuthHeaders(): HeadersInit {
   if (!token) {
     throw new Error('未授权：缺少认证令牌');
   }
+  
+  // 检查token是否过期
+  try {
+    // 简单验证token格式 (Bearer token通常是JWT格式)
+    const tokenParts = token.split('.');
+    if (tokenParts.length !== 3) {
+      throw new Error('无效的令牌格式');
+    }
+    
+    // 解析JWT payload (第二部分)
+    const payload = JSON.parse(atob(tokenParts[1]));
+    
+    // 检查过期时间
+    if (payload.exp && payload.exp < Date.now() / 1000) {
+      // 令牌已过期，尝试刷新
+      console.warn('令牌已过期，需要重新登录');
+      // 触发登出流程 (这将重定向到登录页)
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      window.location.href = '/login';
+      throw new Error('会话已过期，请重新登录');
+    }
+  } catch (e) {
+    // 如果解析失败，仍然尝试使用token (可能不是JWT格式)
+    console.warn('无法验证令牌:', e);
+  }
+  
   return {
     'Content-Type': 'application/json',
     'Authorization': `Bearer ${token}`,

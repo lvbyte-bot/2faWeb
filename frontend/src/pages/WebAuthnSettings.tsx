@@ -16,8 +16,11 @@ import { IconFingerprint, IconAlertCircle, IconCheck, IconX, IconList } from '@t
 import { useAuth } from '../contexts/AuthContext';
 import { Link } from 'react-router-dom';
 import WebAuthnGuide from '../components/WebAuthnGuide';
+import { useTranslation } from 'react-i18next';
 
 export default function WebAuthnSettings() {
+  const { t } = useTranslation();
+  
   const {
     user,
     isWebAuthnSupported,
@@ -52,21 +55,21 @@ export default function WebAuthnSettings() {
   return (
     <Container size="sm" py="xl">
       <Title order={2} mb="md">
-        WebAuthn 设置
+        {t('settings.webauthn.title')}
       </Title>
 
       <Text c="dimmed" mb="xl">
-        使用 WebAuthn 可以通过指纹、面部识别或安全密钥进行登录，无需输入密码。
+        {t('settings.webauthn.description')}
       </Text>
 
       {!isWebAuthnSupported && (
         <Alert
           icon={<IconAlertCircle size={16} />}
-          title="不支持 WebAuthn"
+          title={t('settings.webauthn.notSupported')}
           color="red"
           mb="lg"
         >
-          您的浏览器不支持 WebAuthn。请使用最新版本的 Chrome、Firefox、Safari 或 Edge 浏览器。
+          {t('settings.webauthn.notSupportedMessage')}
         </Alert>
       )}
 
@@ -74,30 +77,30 @@ export default function WebAuthnSettings() {
         <Card withBorder p="lg" radius="md" mb="lg">
           <Group mb="md">
             <IconFingerprint size={24} />
-            <Title order={3}>生物识别和安全密钥</Title>
+            <Title order={3}>{t('settings.webauthn.biometricsAndSecurityKeys')}</Title>
           </Group>
 
           <Text mb="md">
-            您可以注册您的设备上的生物识别器（如指纹或面部识别）或安全密钥（如 YubiKey）来进行无密码登录。
+            {t('settings.webauthn.registerDescription')}
           </Text>
 
           {isPlatformAuthenticatorAvailable ? (
             <Alert
               icon={<IconCheck size={16} />}
-              title="支持平台认证器"
+              title={t('settings.webauthn.platformAuthenticatorSupported')}
               color="green"
               mb="lg"
             >
-              您的设备支持平台认证器（如指纹或面部识别）。
+              {t('settings.webauthn.platformAuthenticatorSupportedMessage')}
             </Alert>
           ) : (
             <Alert
               icon={<IconX size={16} />}
-              title="不支持平台认证器"
+              title={t('settings.webauthn.platformAuthenticatorNotSupported')}
               color="yellow"
               mb="lg"
             >
-              您的设备不支持平台认证器。您仍然可以使用安全密钥（如 YubiKey）进行注册。
+              {t('settings.webauthn.platformAuthenticatorNotSupportedMessage')}
             </Alert>
           )}
 
@@ -110,7 +113,7 @@ export default function WebAuthnSettings() {
               loading={isRegistering}
               disabled={!isWebAuthnSupported}
             >
-              注册新凭证
+              {t('settings.webauthn.registerNewCredential')}
             </Button>
 
             <Button
@@ -119,7 +122,7 @@ export default function WebAuthnSettings() {
               leftSection={<IconList size={16} />}
               variant="outline"
             >
-              管理已注册凭证
+              {t('settings.webauthn.manageRegisteredCredentials')}
             </Button>
           </Stack>
         </Card>
@@ -127,15 +130,15 @@ export default function WebAuthnSettings() {
 
       <Alert
         icon={<IconAlertCircle size={16} />}
-        title="安全提示"
+        title={t('settings.webauthn.securityTip')}
         color="blue"
         mb="lg"
       >
-        <Text mb="xs">使用 WebAuthn 时请注意以下事项：</Text>
+        <Text mb="xs">{t('settings.webauthn.securityTipMessage')}</Text>
         <ul>
-          <li>WebAuthn 凭证与您的设备绑定，无法在其他设备上使用</li>
-          <li>请确保您的设备安全，不要让他人访问您的生物识别数据</li>
-          <li>建议同时注册多种登录方式，以防某种方式不可用</li>
+          <li>{t('settings.webauthn.securityTip1')}</li>
+          <li>{t('settings.webauthn.securityTip2')}</li>
+          <li>{t('settings.webauthn.securityTip3')}</li>
         </ul>
       </Alert>
 

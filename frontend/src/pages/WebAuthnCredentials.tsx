@@ -20,8 +20,10 @@ import { IconFingerprint, IconAlertCircle, IconTrash, IconRefresh, IconEdit, Ico
 import { useAuth } from '../contexts/AuthContext';
 import * as webAuthnService from '../services/webAuthnService';
 import { notifications } from '@mantine/notifications';
+import { useTranslation } from 'react-i18next';
 
 export default function WebAuthnCredentials() {
+  const { t } = useTranslation();
   const { user, isWebAuthnSupported } = useAuth();
   const [credentials, setCredentials] = useState<webAuthnService.WebAuthnCredential[]>([]);
   const [loading, setLoading] = useState(true);
@@ -41,7 +43,7 @@ export default function WebAuthnCredentials() {
       setCredentials(data);
     } catch (err) {
       console.error('加载凭证失败:', err);
-      setError(err instanceof Error ? err.message : '加载凭证失败');
+      setError(err instanceof Error ? err.message : t('settings.webauthnCredentials.loadingErrorMessage'));
     } finally {
       setLoading(false);
     }
@@ -65,15 +67,15 @@ export default function WebAuthnCredentials() {
       setCredentials(prev => prev.filter(cred => cred.id !== selectedCredential.id));
 
       notifications.show({
-        title: '删除成功',
-        message: '凭证已成功删除',
+        title: t('settings.webauthnCredentials.deleteSuccess'),
+        message: t('settings.webauthnCredentials.deleteSuccessMessage'),
         color: 'green',
       });
     } catch (err) {
       console.error('删除凭证失败:', err);
       notifications.show({
-        title: '删除失败',
-        message: err instanceof Error ? err.message : '删除凭证失败',
+        title: t('settings.webauthnCredentials.deleteFailed'),
+        message: err instanceof Error ? err.message : t('settings.webauthnCredentials.deleteFailed'),
         color: 'red',
       });
     } finally {
@@ -105,15 +107,15 @@ export default function WebAuthnCredentials() {
       ));
 
       notifications.show({
-        title: '更新成功',
-        message: '凭证名称已成功更新',
+        title: t('settings.webauthnCredentials.updateSuccess'),
+        message: t('settings.webauthnCredentials.updateSuccessMessage'),
         color: 'green',
       });
     } catch (err) {
       console.error('更新凭证名称失败:', err);
       notifications.show({
-        title: '更新失败',
-        message: err instanceof Error ? err.message : '更新凭证名称失败',
+        title: t('settings.webauthnCredentials.updateFailed'),
+        message: err instanceof Error ? err.message : t('settings.webauthnCredentials.updateFailed'),
         color: 'red',
       });
     } finally {
@@ -130,7 +132,7 @@ export default function WebAuthnCredentials() {
 
   // 格式化日期
   const formatDate = (timestamp: number | null) => {
-    if (!timestamp) return '从未使用';
+    if (!timestamp) return t('settings.webauthnCredentials.neverUsed');
     return new Date(timestamp).toLocaleString();
   };
 
@@ -147,21 +149,21 @@ export default function WebAuthnCredentials() {
   return (
     <Container size="md" py="xl">
       <Title order={2} mb="md">
-        WebAuthn 凭证管理
+        {t('settings.webauthnCredentials.title')}
       </Title>
 
       <Text c="dimmed" mb="xl">
-        管理您的生物识别和安全密钥凭证。
+        {t('settings.webauthnCredentials.description')}
       </Text>
 
       {!isWebAuthnSupported && (
         <Alert
           icon={<IconAlertCircle size={16} />}
-          title="不支持 WebAuthn"
+          title={t('settings.webauthn.notSupported')}
           color="red"
           mb="lg"
         >
-          您的浏览器不支持 WebAuthn。请使用最新版本的 Chrome、Firefox、Safari 或 Edge 浏览器。
+          {t('settings.webauthn.notSupportedMessage')}
         </Alert>
       )}
 
@@ -169,7 +171,7 @@ export default function WebAuthnCredentials() {
         <Group justify="space-between" mb="md">
           <Group>
             <IconFingerprint size={24} />
-            <Title order={3}>已注册的凭证</Title>
+            <Title order={3}>{t('settings.webauthnCredentials.registeredCredentials')}</Title>
           </Group>
           <Button
             leftSection={<IconRefresh size={16} />}
@@ -177,14 +179,14 @@ export default function WebAuthnCredentials() {
             onClick={loadCredentials}
             loading={loading}
           >
-            刷新
+            {t('settings.webauthnCredentials.refresh')}
           </Button>
         </Group>
 
         {error && (
           <Alert
             icon={<IconAlertCircle size={16} />}
-            title="加载失败"
+            title={t('settings.webauthnCredentials.loadingError')}
             color="red"
             mb="lg"
           >
@@ -199,19 +201,19 @@ export default function WebAuthnCredentials() {
         ) : credentials.length === 0 ? (
           <Alert
             icon={<IconAlertCircle size={16} />}
-            title="没有凭证"
+            title={t('settings.webauthnCredentials.noCredentials')}
             color="blue"
           >
-            您还没有注册任何WebAuthn凭证。请前往WebAuthn设置页面注册新凭证。
+            {t('settings.webauthnCredentials.noCredentialsMessage')}
           </Alert>
         ) : (
           <Table>
             <Table.Thead>
               <Table.Tr>
-                <Table.Th>名称</Table.Th>
-                <Table.Th>创建时间</Table.Th>
-                <Table.Th>最后使用</Table.Th>
-                <Table.Th>操作</Table.Th>
+                <Table.Th>{t('settings.webauthnCredentials.nameColumn')}</Table.Th>
+                <Table.Th>{t('settings.webauthnCredentials.createdAtColumn')}</Table.Th>
+                <Table.Th>{t('settings.webauthnCredentials.lastUsedColumn')}</Table.Th>
+                <Table.Th>{t('settings.webauthnCredentials.actionsColumn')}</Table.Th>
               </Table.Tr>
             </Table.Thead>
             <Table.Tbody>
@@ -238,7 +240,7 @@ export default function WebAuthnCredentials() {
                           color="green"
                           variant="subtle"
                           onClick={() => saveCredentialName(credential.id)}
-                          title="保存"
+                          title={t('settings.webauthnCredentials.save')}
                         >
                           <IconCheck size={16} />
                         </ActionIcon>
@@ -251,7 +253,7 @@ export default function WebAuthnCredentials() {
                           color="blue"
                           variant="subtle"
                           onClick={() => startEditingName(credential)}
-                          title="编辑名称"
+                          title={t('settings.webauthnCredentials.editName')}
                         >
                           <IconEdit size={16} />
                         </ActionIcon>
@@ -263,7 +265,7 @@ export default function WebAuthnCredentials() {
                     {credential.lastUsed ? (
                       formatDate(credential.lastUsed)
                     ) : (
-                      <Badge color="gray">从未使用</Badge>
+                      <Badge color="gray">{t('settings.webauthnCredentials.neverUsed')}</Badge>
                     )}
                   </Table.Td>
                   <Table.Td>
@@ -271,7 +273,7 @@ export default function WebAuthnCredentials() {
                       color="red"
                       variant="subtle"
                       onClick={() => openDeleteModal(credential)}
-                      title="删除"
+                      title={t('settings.webauthnCredentials.deleteCredential')}
                     >
                       <IconTrash size={16} />
                     </ActionIcon>
@@ -287,18 +289,18 @@ export default function WebAuthnCredentials() {
       <Modal
         opened={deleteModalOpen}
         onClose={() => setDeleteModalOpen(false)}
-        title="确认删除"
+        title={t('settings.webauthnCredentials.confirmDelete')}
         centered
       >
         <Text mb="lg">
-          您确定要删除凭证 "{selectedCredential?.name}" 吗？此操作不可撤销。
+          {t('settings.webauthnCredentials.confirmDeleteMessage', { name: selectedCredential?.name })}
         </Text>
         <Group justify="flex-end">
           <Button variant="outline" onClick={() => setDeleteModalOpen(false)}>
-            取消
+            {t('common.cancel')}
           </Button>
           <Button color="red" onClick={handleDeleteCredential}>
-            删除
+            {t('common.delete')}
           </Button>
         </Group>
       </Modal>

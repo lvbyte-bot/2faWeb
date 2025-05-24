@@ -22,10 +22,12 @@ import OTPDisplay from '../components/OTPDisplay';
 import AccountForm from '../components/AccountForm';
 import type { OTPAccount } from '../types';
 import { usePerformanceMonitoring } from '../utils/performance';
+import { useTranslation } from 'react-i18next';
 
 export default function Dashboard() {
   const performance = usePerformanceMonitoring('Dashboard');
   const { user } = useAuth();
+  const { t } = useTranslation();
   const {
     accounts,
     loading,
@@ -78,7 +80,7 @@ export default function Dashboard() {
 
   // 使用useMemo优化同步按钮
   const syncButton = useMemo(() => (
-    <Tooltip label="同步数据">
+    <Tooltip label={t('dashboard.syncData')}>
       <ActionIcon
         variant="light"
         color="blue"
@@ -98,20 +100,20 @@ export default function Dashboard() {
   const networkStatus = useMemo(() => (
     isOnline ? (
       <Badge color="green" leftSection={<IconWifi size={14} />}>
-        在线模式
+        {t('dashboard.onlineMode')}
       </Badge>
     ) : (
       <Badge color="yellow" leftSection={<IconWifiOff size={14} />}>
-        离线模式
+        {t('dashboard.offlineMode')}
       </Badge>
     )
-  ), [isOnline]);
+  ), [isOnline, t]);
 
   return (
     <Container size="lg" py="xl">
       <Group justify="space-between" align="center" mb="md">
         <Title order={2}>
-          欢迎回来，{user?.username || '用户'}
+          {t('dashboard.welcomeBack')}, {user?.username || t('dashboard.user')}
         </Title>
 
         <Group>
@@ -121,8 +123,8 @@ export default function Dashboard() {
       </Group>
 
       <Text c="dimmed" mb="xl">
-        您的二步验证码都在这里。点击验证码可以复制。
-        {!isOnline && ' 当前处于离线模式，部分功能可能不可用。'}
+        {t('dashboard.otpCodeDescription')}
+        {!isOnline && t('dashboard.offlineWarning')}
       </Text>
 
       {loading ? (
@@ -132,7 +134,7 @@ export default function Dashboard() {
       ) : error ? (
         <Card withBorder p="xl" radius="md">
           <Text ta="center" fw={500} mb="md" c="red">
-            加载账户时出错
+            {t('dashboard.loadingError')}
           </Text>
           <Text ta="center" c="dimmed">
             {error}
@@ -141,14 +143,14 @@ export default function Dashboard() {
       ) : accounts.length === 0 ? (
         <Card withBorder p="xl" radius="md">
           <Text ta="center" fw={500} mb="md">
-            您还没有添加任何账户
+            {t('dashboard.noAccounts')}
           </Text>
           <Button
             fullWidth
             onClick={handleAdd}
             data-testid="add-account-button"
           >
-            添加新账户
+            {t('accounts.addAccount')}
           </Button>
         </Card>
       ) : (
@@ -164,7 +166,7 @@ export default function Dashboard() {
 
           <Card withBorder shadow="sm" radius="md" p="md">
             <Card.Section withBorder inheritPadding py="xs">
-              <Text fw={500} ta="center">添加新账户</Text>
+              <Text fw={500} ta="center">{t('accounts.addNewAccount')}</Text>
             </Card.Section>
 
             <Button
@@ -174,7 +176,7 @@ export default function Dashboard() {
               onClick={handleAdd}
               data-testid="add-account-button"
             >
-              添加账户
+              {t('accounts.addAccount')}
             </Button>
           </Card>
         </SimpleGrid>
@@ -184,7 +186,7 @@ export default function Dashboard() {
       <Modal
         opened={opened}
         onClose={close}
-        title={editingAccount ? '编辑账户' : '添加新账户'}
+        title={editingAccount ? t('accounts.editAccount') : t('accounts.addNewAccount')}
         centered
         size="lg"
         data-testid="account-modal"
@@ -193,7 +195,7 @@ export default function Dashboard() {
           initialValues={editingAccount || undefined}
           onSubmit={handleSubmit}
           onCancel={close}
-          title={editingAccount ? '编辑账户' : '添加新账户'}
+          title={editingAccount ? t('accounts.editAccount') : t('accounts.addNewAccount')}
         />
       </Modal>
     </Container>

@@ -18,6 +18,7 @@ import { IconFingerprint, IconAlertCircle } from '@tabler/icons-react';
 import { useForm } from '@mantine/form';
 import { useAuth } from '../contexts/AuthContext';
 import WebAuthnGuide from '../components/WebAuthnGuide';
+import { useTranslation } from 'react-i18next';
 
 interface LoginFormValues {
   username: string;
@@ -29,6 +30,7 @@ export default function Login() {
   const [webAuthnLoading, setWebAuthnLoading] = useState(false);
   const [username, setUsername] = useState('');
   const navigate = useNavigate();
+  const { t } = useTranslation();
   const {
     login,
     loginWithWebAuthn,
@@ -42,8 +44,8 @@ export default function Login() {
       password: '',
     },
     validate: {
-      username: (value) => (value.length < 3 ? '用户名至少需要3个字符' : null),
-      password: (value) => (value.length < 8 ? '密码至少需要8个字符' : null),
+      username: (value) => (value.length < 3 ? t('auth.usernameMinLength') : null),
+      password: (value) => (value.length < 8 ? t('auth.passwordMinLength') : null),
     },
   });
 
@@ -85,24 +87,24 @@ export default function Login() {
     <Container size="xs" py="xl">
       <Paper radius="md" p="xl" withBorder>
         <Title order={2} ta="center" mt="md" mb="md">
-          欢迎使用2FA Web
+          {t('auth.welcomeMessage')}
         </Title>
 
         <Text c="dimmed" size="sm" ta="center" mb="xl">
-          登录您的账户以管理二步验证
+          {t('auth.loginDescription')}
         </Text>
 
         <form onSubmit={form.onSubmit(handleSubmit)}>
           <TextInput
-            label="用户名"
-            placeholder="您的用户名"
+            label={t('auth.username')}
+            placeholder={t('auth.usernamePlaceholder')}
             required
             {...form.getInputProps('username')}
           />
 
           <PasswordInput
-            label="密码"
-            placeholder="您的密码"
+            label={t('auth.password')}
+            placeholder={t('auth.passwordPlaceholder')}
             required
             mt="md"
             {...form.getInputProps('password')}
@@ -110,21 +112,21 @@ export default function Login() {
 
           <Group justify="space-between" mt="lg">
             <Anchor component={Link} to="/register" size="sm">
-              没有账户？注册
+              {t('auth.noAccountRegister')}
             </Anchor>
             <Anchor component={Link} to="/reset-password" size="sm">
-              忘记密码？
+              {t('auth.forgotPassword')}
             </Anchor>
           </Group>
 
           <Button fullWidth mt="xl" type="submit" loading={loading}>
-            使用密码登录
+            {t('auth.loginWithPassword')}
           </Button>
         </form>
 
         {isWebAuthnSupported && (
           <>
-            <Divider label="或" labelPosition="center" my="lg" />
+            <Divider label={t('common.or')} labelPosition="center" my="lg" />
 
             <Button
               fullWidth
@@ -133,12 +135,12 @@ export default function Login() {
               onClick={handleWebAuthnLogin}
               loading={webAuthnLoading}
             >
-              使用生物识别或安全密钥登录
+              {t('auth.loginWithBiometrics')}
             </Button>
 
             {isPlatformAuthenticatorAvailable && (
               <Text size="xs" c="dimmed" ta="center" mt="sm">
-                您的设备支持生物识别登录（如指纹或面部识别）
+                {t('auth.biometricsSupported')}
               </Text>
             )}
           </>
@@ -147,11 +149,11 @@ export default function Login() {
         {!isWebAuthnSupported && (
           <Alert
             icon={<IconAlertCircle size={16} />}
-            title="不支持生物识别登录"
+            title={t('auth.biometricsNotSupported')}
             color="yellow"
             mt="lg"
           >
-            您的浏览器不支持WebAuthn。请使用最新版本的Chrome、Firefox、Safari或Edge浏览器以启用生物识别登录。
+            {t('auth.webAuthnNotSupported')}
           </Alert>
         )}
       </Paper>

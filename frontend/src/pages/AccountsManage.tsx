@@ -22,16 +22,18 @@ import { IconRefresh, IconWifi, IconWifiOff } from '@tabler/icons-react';
 import { useAccounts } from '../contexts/AccountContext';
 import AccountForm from '../components/AccountForm';
 import type { OTPAccount } from '@/types';
+import { useTranslation } from 'react-i18next';
 
 // 模拟分组数据
-const mockGroups = [
-  { value: '工作', label: '工作' },
-  { value: '个人', label: '个人' },
-  { value: '开发', label: '开发' },
-  { value: '金融', label: '金融' },
+const getGroups = (t: any) => [
+  { value: '工作', label: t('accounts.groups.work') },
+  { value: '个人', label: t('accounts.groups.personal') },
+  { value: '开发', label: t('accounts.groups.development') },
+  { value: '金融', label: t('accounts.groups.finance') },
 ];
 
 export default function AccountsManage() {
+  const { t } = useTranslation();
   const {
     accounts,
     loading,
@@ -42,6 +44,9 @@ export default function AccountsManage() {
     createAccount,
     syncData
   } = useAccounts();
+  
+  // 获取本地化的分组数据
+  const mockGroups = getGroups(t);
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedGroup, setSelectedGroup] = useState<string | null>(null);
   const [opened, { open, close }] = useDisclosure(false);
@@ -121,21 +126,21 @@ export default function AccountsManage() {
     <Container size="lg" py="xl">
       <Group justify="space-between" align="center" mb="md">
         <Title order={2}>
-          管理账户
+          {t('accounts.manageAccounts')}
         </Title>
 
         <Group>
           {isOnline ? (
             <Badge color="green" leftSection={<IconWifi size={14} />}>
-              在线模式
+              {t('dashboard.onlineMode')}
             </Badge>
           ) : (
             <Badge color="yellow" leftSection={<IconWifiOff size={14} />}>
-              离线模式
+              {t('dashboard.offlineMode')}
             </Badge>
           )}
 
-          <Tooltip label="同步数据">
+          <Tooltip label={t('dashboard.syncData')}>
             <ActionIcon
               variant="light"
               color="blue"
@@ -150,20 +155,20 @@ export default function AccountsManage() {
       </Group>
 
       <Text c="dimmed" mb="xl">
-        在这里管理您的所有二步验证账户
-        {!isOnline && ' 当前处于离线模式，部分功能可能不可用。'}
+        {t('accounts.manageDescription')}
+        {!isOnline && t('dashboard.offlineWarning')}
       </Text>
 
       <Group mb="md">
         <TextInput
-          placeholder="搜索账户..."
+          placeholder={t('accounts.searchPlaceholder')}
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.currentTarget.value)}
           style={{ flex: 1 }}
         />
 
         <Select
-          placeholder="按分组筛选"
+          placeholder={t('accounts.filterByGroup')}
           data={mockGroups}
           value={selectedGroup}
           onChange={setSelectedGroup}
@@ -174,7 +179,7 @@ export default function AccountsManage() {
           onClick={handleAdd}
           data-testid="add-account-button"
         >
-          添加账户
+          {t('accounts.addAccount')}
         </Button>
       </Group>
 
@@ -184,24 +189,24 @@ export default function AccountsManage() {
         </Center>
       ) : error ? (
         <Text c="red" ta="center" py="xl">
-          加载账户时出错: {error}
+          {t('accounts.loadingError')}: {error}
         </Text>
       ) : filteredAccounts.length === 0 ? (
         <Text c="dimmed" ta="center" py="xl">
-          没有找到匹配的账户
+          {t('accounts.noMatchingAccounts')}
         </Text>
       ) : (
         <Table striped highlightOnHover withTableBorder>
           <Table.Thead>
             <Table.Tr>
-              <Table.Th>名称</Table.Th>
-              <Table.Th>发行方</Table.Th>
-              <Table.Th>类型</Table.Th>
-              <Table.Th>算法</Table.Th>
-              <Table.Th>位数</Table.Th>
-              <Table.Th>周期/计数器</Table.Th>
-              <Table.Th>分组</Table.Th>
-              <Table.Th>操作</Table.Th>
+              <Table.Th>{t('accounts.name')}</Table.Th>
+              <Table.Th>{t('accounts.issuer')}</Table.Th>
+              <Table.Th>{t('accounts.type')}</Table.Th>
+              <Table.Th>{t('accounts.algorithm')}</Table.Th>
+              <Table.Th>{t('accounts.digits')}</Table.Th>
+              <Table.Th>{t('accounts.periodCounter')}</Table.Th>
+              <Table.Th>{t('accounts.group')}</Table.Th>
+              <Table.Th>{t('accounts.actions')}</Table.Th>
             </Table.Tr>
           </Table.Thead>
           <Table.Tbody>
@@ -213,7 +218,7 @@ export default function AccountsManage() {
                 <Table.Td>{getAlgorithmLabel(account.algorithm)}</Table.Td>
                 <Table.Td>{account.digits}</Table.Td>
                 <Table.Td>
-                  {account.type === 'TOTP' ? `${account.period}秒` : `${account.counter}`}
+                  {account.type === 'TOTP' ? `${account.period} ${t('accounts.seconds')}` : `${account.counter}`}
                 </Table.Td>
                 <Table.Td>
                   {account.groupId ?
@@ -222,7 +227,7 @@ export default function AccountsManage() {
                 </Table.Td>
                 <Table.Td>
                   <Group gap="xs">
-                    <Tooltip label="编辑">
+                    <Tooltip label={t('common.edit')}>
                       <ActionIcon variant="light" color="blue" onClick={() => handleEdit(account)}>
                         ✏️
                       </ActionIcon>
@@ -236,7 +241,7 @@ export default function AccountsManage() {
                       opened={deleteConfirmId === account.id}
                     >
                       <Popover.Target>
-                        <Tooltip label="删除">
+                        <Tooltip label={t('common.delete')}>
                           <ActionIcon
                             variant="light"
                             color="red"
@@ -248,7 +253,7 @@ export default function AccountsManage() {
                       </Popover.Target>
                       <Popover.Dropdown>
                         <Stack>
-                          <Text size="sm">确定要删除此账户吗？</Text>
+                          <Text size="sm">{t('accounts.confirmDelete')}</Text>
                           <Group>
                             <Button
                               size="xs"
@@ -256,14 +261,14 @@ export default function AccountsManage() {
                               color="gray"
                               onClick={() => setDeleteConfirmId(null)}
                             >
-                              取消
+                              {t('common.cancel')}
                             </Button>
                             <Button
                               size="xs"
                               color="red"
                               onClick={() => handleDelete(account.id)}
                             >
-                              删除
+                              {t('common.delete')}
                             </Button>
                           </Group>
                         </Stack>
@@ -281,7 +286,7 @@ export default function AccountsManage() {
       <Modal
         opened={opened}
         onClose={close}
-        title={editingAccount ? '编辑账户' : '添加新账户'}
+        title={editingAccount ? t('accounts.editAccount') : t('accounts.addNewAccount')}
         centered
         size="lg"
         data-testid="account-modal"
@@ -291,7 +296,7 @@ export default function AccountsManage() {
           groups={mockGroups}
           onSubmit={handleSubmit}
           onCancel={close}
-          title={editingAccount ? '编辑账户' : '添加新账户'}
+          title={editingAccount ? t('accounts.editAccount') : t('accounts.addNewAccount')}
         />
       </Modal>
     </Container>

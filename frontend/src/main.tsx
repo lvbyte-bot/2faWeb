@@ -8,6 +8,14 @@ import '@mantine/notifications/styles.css'
 import './index.css'
 import App from './App'
 
+// 导入i18n配置
+import i18n from './i18n/i18n'
+
+// 调试i18n初始化
+console.log('当前语言:', i18n.language)
+console.log('可用语言:', i18n.languages)
+console.log('i18n是否准备好:', i18n.isInitialized)
+
 // 输出环境变量，用于调试
 console.log('API URL:', import.meta.env.VITE_API_URL);
 

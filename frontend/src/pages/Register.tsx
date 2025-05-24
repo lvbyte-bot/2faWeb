@@ -14,6 +14,7 @@ import {
 } from '@mantine/core';
 import { useForm } from '@mantine/form';
 import { useAuth } from '../contexts/AuthContext';
+import { useTranslation } from 'react-i18next';
 
 interface RegisterFormValues {
   username: string;
@@ -26,6 +27,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
   const { register } = useAuth();
+  const { t } = useTranslation();
   
   const form = useForm<RegisterFormValues>({
     initialValues: {
@@ -35,11 +37,11 @@ export default function Register() {
       confirmPassword: '',
     },
     validate: {
-      username: (value) => (value.length < 3 ? '用户名至少需要3个字符' : null),
-      email: (value) => (/^\S+@\S+$/.test(value) ? null : '请输入有效的电子邮件地址'),
-      password: (value) => (value.length < 8 ? '密码至少需要8个字符' : null),
+      username: (value) => (value.length < 3 ? t('auth.usernameMinLength') : null),
+      email: (value) => (/^\S+@\S+$/.test(value) ? null : t('auth.invalidEmail')),
+      password: (value) => (value.length < 8 ? t('auth.passwordMinLength') : null),
       confirmPassword: (value, values) => 
-        value !== values.password ? '密码不匹配' : null,
+        value !== values.password ? t('auth.passwordMismatch') : null,
     },
   });
   
@@ -61,40 +63,40 @@ export default function Register() {
     <Container size="xs" py="xl">
       <Paper radius="md" p="xl" withBorder>
         <Title order={2} ta="center" mt="md" mb="md">
-          创建新账户
+          {t('auth.createAccount')}
         </Title>
         
         <Text c="dimmed" size="sm" ta="center" mb="xl">
-          注册2FA Web以管理您的二步验证
+          {t('auth.registerDescription')}
         </Text>
         
         <form onSubmit={form.onSubmit(handleSubmit)}>
           <TextInput
-            label="用户名"
-            placeholder="您的用户名"
+            label={t('auth.username')}
+            placeholder={t('auth.usernamePlaceholder')}
             required
             {...form.getInputProps('username')}
           />
           
           <TextInput
-            label="电子邮件"
-            placeholder="您的电子邮件"
+            label={t('auth.email')}
+            placeholder={t('auth.emailPlaceholder')}
             required
             mt="md"
             {...form.getInputProps('email')}
           />
           
           <PasswordInput
-            label="密码"
-            placeholder="您的密码"
+            label={t('auth.password')}
+            placeholder={t('auth.passwordPlaceholder')}
             required
             mt="md"
             {...form.getInputProps('password')}
           />
           
           <PasswordInput
-            label="确认密码"
-            placeholder="确认您的密码"
+            label={t('auth.confirmPassword')}
+            placeholder={t('auth.confirmPasswordPlaceholder')}
             required
             mt="md"
             {...form.getInputProps('confirmPassword')}
@@ -102,12 +104,12 @@ export default function Register() {
           
           <Group justify="space-between" mt="lg">
             <Anchor component={Link} to="/login" size="sm">
-              已有账户？登录
+              {t('auth.haveAccountLogin')}
             </Anchor>
           </Group>
           
           <Button fullWidth mt="xl" type="submit" loading={loading}>
-            注册
+            {t('auth.register')}
           </Button>
         </form>
       </Paper>

@@ -51,6 +51,18 @@ export async function initializeDatabase(db: D1Database): Promise<void> {
       )
     `).run();
 
+    // 检查accounts表是否存在group_id列，如果不存在则添加
+    try {
+      // 尝试查询accounts表中的group_id列
+      await db.prepare(`SELECT group_id FROM accounts LIMIT 1`).run();
+      console.log('accounts表中的group_id列已存在');
+    } catch (err) {
+      // 如果查询失败，说明列不存在，添加它
+      console.log('accounts表中缺少group_id列，正在添加...');
+      await db.prepare(`ALTER TABLE accounts ADD COLUMN group_id TEXT`).run();
+      console.log('已成功添加group_id列');
+    }
+
     // 创建WebAuthn凭证表
     await db.prepare(`
       CREATE TABLE IF NOT EXISTS webauthn_credentials (

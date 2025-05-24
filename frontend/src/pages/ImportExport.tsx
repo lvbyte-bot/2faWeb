@@ -24,8 +24,10 @@ import type { OTPAccount } from '@/types';
 import { parseOtpUri } from '../utils/otp';
 import * as encryptionService from '../services/encryptionService';
 import * as cryptoUtils from '../utils/crypto';
+import { useTranslation } from 'react-i18next';
 
 export default function ImportExport() {
+  const { t } = useTranslation();
   const { importAccounts, exportAccounts, loading } = useAccounts();
 
   // 导入状态
@@ -51,12 +53,12 @@ export default function ImportExport() {
 
     // 检查文件类型和大小
     if (file.size === 0) {
-      setParseError('文件为空');
+      setParseError(t('importExport.emptyFile'));
       return;
     }
 
     if (file.size > 10 * 1024 * 1024) { // 10MB限制
-      setParseError('文件太大，请选择小于10MB的文件');
+      setParseError(t('importExport.fileTooLarge'));
       return;
     }
 
@@ -65,7 +67,7 @@ export default function ImportExport() {
     reader.onload = async (e) => {
       try {
         if (!e.target || !e.target.result) {
-          setParseError('读取文件内容失败');
+          setParseError(t('importExport.readFileFailed'));
           return;
         }
 
@@ -86,8 +88,8 @@ export default function ImportExport() {
               const context = canvas.getContext('2d');
 
               if (!context) {
-                setParseError('无法创建画布上下文');
-                console.error('无法创建画布上下文');
+                setParseError(t('importExport.canvasContextFailed'));
+                console.error(t('importExport.canvasContextFailed'));
                 return;
               }
 
@@ -123,25 +125,25 @@ export default function ImportExport() {
                     // 设置解析结果
                     setParsedAccounts([account]);
                   } catch (err) {
-                    setParseError('无效的 OTP 二维码');
+                    setParseError(t('importExport.invalidOtpQrCode'));
                     console.error('解析 OTP URI 失败:', err);
                   }
                 } else {
-                  setParseError('上传的图片不包含有效的 OTP 二维码');
+                  setParseError(t('importExport.noValidOtpQrCode'));
                   console.log('未检测到二维码或二维码不是OTP格式', code?.data);
                 }
               }).catch(err => {
                 console.error('加载jsQR库失败:', err);
-                setParseError('加载二维码解析库失败');
+                setParseError(t('importExport.loadQrLibFailed'));
               });
             } catch (err) {
-              setParseError('处理图片时出错');
+              setParseError(t('importExport.processImageError'));
               console.error('处理图片失败:', err);
             }
           };
 
           img.onerror = () => {
-            setParseError('无法加载图片');
+            setParseError(t('importExport.cannotLoadImage'));
             console.error('图片加载失败');
           };
 
@@ -162,7 +164,7 @@ export default function ImportExport() {
 
           if (isEncrypted) {
             if (!importPassword) {
-              setParseError('此文件已加密，请提供密码');
+              setParseError(t('importExport.fileEncryptedNeedPassword'));
               return;
             }
 
@@ -172,7 +174,7 @@ export default function ImportExport() {
               console.log('文件解密成功');
             } catch (decryptError) {
               console.error('解密文件失败:', decryptError);
-              setParseError('解密文件失败，可能是密码错误');
+              setParseError(t('importExport.decryptFileFailed'));
               return;
             }
           }
@@ -203,7 +205,7 @@ export default function ImportExport() {
 
           // 其他JSON格式，但不是我们支持的格式
           console.log('未知的JSON格式');
-          setParseError('不支持的JSON格式');
+          setParseError(t('importExport.unsupportedJsonFormat'));
         } catch (jsonError) {
           console.log('不是JSON格式，尝试解析为OTP URI列表');
 
@@ -232,17 +234,17 @@ export default function ImportExport() {
 
           // 如果没有找到任何有效的OTP URI，设置错误
           console.log('未找到有效的OTP URI');
-          setParseError('文件不包含有效的OTP账户数据');
+          setParseError(t('importExport.noValidOtpData'));
         }
       } catch (error) {
         console.error('解析文件失败:', error);
-        setParseError('解析文件失败: ' + (error instanceof Error ? error.message : String(error)));
+        setParseError(t('importExport.parseFileFailed') + ': ' + (error instanceof Error ? error.message : String(error)));
       }
     };
 
     reader.onerror = (event) => {
       console.error('文件读取错误:', event);
-      setParseError('读取文件失败: ' + (event.target?.error?.message || '未知错误'));
+      setParseError(t('importExport.readFileFailed') + ': ' + (event.target?.error?.message || t('importExport.unknownError')));
     };
 
     // 检查是否是图片文件
@@ -287,8 +289,8 @@ export default function ImportExport() {
   const handleImport = async () => {
     if (!importFile || parsedAccounts.length === 0) {
       notifications.show({
-        title: '错误',
-        message: '没有可导入的账户',
+        title: t('common.error'),
+        message: t('importExport.noAccountsToImport'),
         color: 'red',
       });
       return;
@@ -302,7 +304,7 @@ export default function ImportExport() {
       // 检查账户数据是否有效
       for (const account of parsedAccounts) {
         if (!account.name || !account.secret) {
-          throw new Error(`账户数据缺少必要的字段（名称或密钥）: ${JSON.stringify(account)}`);
+          throw new Error(t('importExport.accountDataMissingFields', { account: JSON.stringify(account) }));
         }
       }
 
@@ -311,8 +313,8 @@ export default function ImportExport() {
       console.log('导入成功，返回数据:', importedAccounts);
 
       notifications.show({
-        title: '导入成功',
-        message: `已成功导入 ${parsedAccounts.length} 个账户`,
+        title: t('importExport.importSuccess'),
+        message: t('importExport.importSuccessMessage', { count: parsedAccounts.length }),
         color: 'green',
       });
 
@@ -348,7 +350,7 @@ export default function ImportExport() {
       console.log('格式化后的错误消息:', errorMessage);
 
       notifications.show({
-        title: '导入失败',
+        title: t('importExport.importFailed'),
         message: errorMessage,
         color: 'red',
       });
@@ -378,8 +380,8 @@ export default function ImportExport() {
   const handleExport = async () => {
     if (exportPassword !== confirmExportPassword) {
       notifications.show({
-        title: '错误',
-        message: '密码不匹配',
+        title: t('common.error'),
+        message: t('auth.passwordMismatch'),
         color: 'red',
       });
       return;
@@ -387,8 +389,8 @@ export default function ImportExport() {
 
     if (encryptExport && exportPassword.length < 8) {
       notifications.show({
-        title: '错误',
-        message: '密码长度应至少为8个字符',
+        title: t('common.error'),
+        message: t('importExport.passwordTooShort'),
         color: 'red',
       });
       return;
@@ -396,8 +398,8 @@ export default function ImportExport() {
 
     if (encryptExport && passwordStrength.score < 30) {
       notifications.show({
-        title: '警告',
-        message: '密码强度较弱，建议使用更强的密码',
+        title: t('common.warning'),
+        message: t('importExport.weakPasswordWarning'),
         color: 'yellow',
       });
     }
@@ -432,8 +434,8 @@ export default function ImportExport() {
         } catch (error) {
           console.error('加密导出数据失败:', error);
           notifications.show({
-            title: '加密失败',
-            message: '加密导出数据失败，将以未加密方式导出',
+            title: t('importExport.encryptionFailed'),
+            message: t('importExport.encryptionFailedExport'),
             color: 'red',
           });
         }
@@ -451,8 +453,8 @@ export default function ImportExport() {
       URL.revokeObjectURL(url);
 
       notifications.show({
-        title: '导出成功',
-        message: `已成功导出 ${accounts.length} 个账户`,
+        title: t('importExport.exportSuccess'),
+        message: t('importExport.exportSuccessMessage', { count: accounts.length }),
         color: 'green',
       });
 
@@ -460,8 +462,8 @@ export default function ImportExport() {
       setConfirmExportPassword('');
     } catch (error) {
       notifications.show({
-        title: '导出失败',
-        message: error instanceof Error ? error.message : '导出账户失败',
+        title: t('importExport.exportFailed'),
+        message: error instanceof Error ? error.message : t('importExport.exportAccountsFailed'),
         color: 'red',
       });
     } finally {
@@ -470,69 +472,69 @@ export default function ImportExport() {
   };
 
   return (
-    <Container size="md" py="xl">
-      <Title order={2} mb="md">
-        导入/导出
+    <Container size="sm">
+      <Title order={3} mb="md">
+        {t('importExport.title')}
       </Title>
 
       <Text c="dimmed" mb="xl">
-        导入或导出您的2FA账户
+        {t('importExport.description')}
       </Text>
 
       <Tabs defaultValue="import">
         <Tabs.List mb="md">
-          <Tabs.Tab value="import">导入</Tabs.Tab>
-          <Tabs.Tab value="export">导出</Tabs.Tab>
+          <Tabs.Tab value="import">{t('importExport.import')}</Tabs.Tab>
+          <Tabs.Tab value="export">{t('importExport.export')}</Tabs.Tab>
         </Tabs.List>
 
         <Tabs.Panel value="import">
           <Paper withBorder p="md" radius="md">
             <Stack>
               <Text>
-                您可以从其他2FA应用导入账户。支持以下格式：
+                {t('importExport.importDescription')}
               </Text>
 
               <List spacing="xs" size="sm" center>
-                <List.Item>2FA Web导出文件 (.json)</List.Item>
-                <List.Item>Google Authenticator导出文件</List.Item>
-                <List.Item>Aegis备份文件</List.Item>
-                <List.Item>Authy备份文件</List.Item>
+                <List.Item>{t('importExport.formatWebExport')}</List.Item>
+                <List.Item>{t('importExport.formatGoogleAuth')}</List.Item>
+                <List.Item>{t('importExport.formatAegis')}</List.Item>
+                <List.Item>{t('importExport.formatAuthy')}</List.Item>
               </List>
 
               <Divider my="sm" />
 
               <FileInput
-                label="选择导入文件"
-                placeholder="点击选择文件"
+                label={t('importExport.selectImportFile')}
+                placeholder={t('importExport.clickToSelectFile')}
                 accept=".json,.txt,.bin,.png,.jpg,.jpeg"
                 value={importFile}
                 onChange={handleFileChange}
                 clearable
-                description="支持JSON、文本文件和二维码图片"
+                description={t('importExport.supportedFileTypes')}
                 error={parseError}
               />
 
               {parseError && (
-                <Alert color="red" title="解析错误">
+                <Alert color="red" title={t('importExport.parseError')}>
                   {parseError}
                 </Alert>
               )}
 
               {parsedAccounts.length > 0 && (
-                <Alert color="green" title="已解析账户">
-                  成功解析 {parsedAccounts.length} 个账户
+                <Alert color="green" title={t('importExport.parsedAccounts')}>
+                  {t('importExport.successfullyParsed', { count: parsedAccounts.length })}
                 </Alert>
               )}
 
               <PasswordInput
-                label="密码（如果文件已加密）"
-                placeholder="输入密码"
+                label={t('importExport.passwordIfEncrypted')}
+                placeholder={t('importExport.enterPassword')}
                 value={importPassword}
                 onChange={(e) => setImportPassword(e.currentTarget.value)}
               />
 
-              <Alert title="注意" color="yellow">
-                导入将添加新账户，但不会覆盖现有账户。如果导入的账户与现有账户具有相同的名称和发行方，您将需要手动解决冲突。
+              <Alert title={t('common.note')} color="yellow">
+                {t('importExport.importNote')}
               </Alert>
 
               <Button
@@ -540,7 +542,7 @@ export default function ImportExport() {
                 loading={isImporting || loading}
                 disabled={!importFile || parsedAccounts.length === 0}
               >
-                导入
+                {t('importExport.import')}
               </Button>
             </Stack>
           </Paper>
@@ -550,17 +552,17 @@ export default function ImportExport() {
           <Paper withBorder p="md" radius="md">
             <Stack>
               <Text>
-                导出您的2FA账户以便备份或迁移到其他设备。
+                {t('importExport.exportDescription')}
               </Text>
 
               <Checkbox
-                label="包含密钥（不安全，但允许完全迁移）"
+                label={t('importExport.includeSecrets')}
                 checked={includeSecrets}
                 onChange={(e) => setIncludeSecrets(e.currentTarget.checked)}
               />
 
               <Checkbox
-                label="加密导出文件（推荐）"
+                label={t('importExport.encryptExportFile')}
                 checked={encryptExport}
                 onChange={(e) => setEncryptExport(e.currentTarget.checked)}
               />
@@ -570,9 +572,9 @@ export default function ImportExport() {
               {encryptExport && (
                 <>
                   <PasswordInput
-                    label="加密密码"
-                    description="用于加密导出文件的密码"
-                    placeholder="输入密码"
+                    label={t('importExport.encryptionPassword')}
+                    description={t('importExport.encryptionPasswordDescription')}
+                    placeholder={t('importExport.enterPassword')}
                     value={exportPassword}
                     onChange={(e) => {
                       setExportPassword(e.currentTarget.value);
@@ -596,21 +598,21 @@ export default function ImportExport() {
                   )}
 
                   <PasswordInput
-                    label="确认密码"
-                    placeholder="再次输入密码"
+                    label={t('importExport.confirmPassword')}
+                    placeholder={t('importExport.enterPasswordAgain')}
                     value={confirmExportPassword}
                     onChange={(e) => setConfirmExportPassword(e.currentTarget.value)}
                     error={
                       confirmExportPassword && exportPassword !== confirmExportPassword
-                        ? '密码不匹配'
+                        ? t('auth.passwordMismatch')
                         : null
                     }
                   />
                 </>
               )}
 
-              <Alert title="安全提示" color="blue">
-                如果您选择包含密钥，请确保使用强密码加密导出文件，并在安全的地方保存该密码。
+              <Alert title={t('importExport.securityTip')} color="blue">
+                {t('importExport.securityMessage')}
               </Alert>
 
               <Button
@@ -624,7 +626,7 @@ export default function ImportExport() {
                   )
                 }
               >
-                导出
+                {t('importExport.export')}
               </Button>
             </Stack>
           </Paper>

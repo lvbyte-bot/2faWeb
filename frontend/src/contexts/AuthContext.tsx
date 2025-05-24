@@ -3,6 +3,7 @@ import type { ReactNode } from 'react';
 import { notifications } from '@mantine/notifications';
 import * as webAuthnService from '../services/webAuthnService';
 import { API_BASE_URL } from '../config';
+import { useTranslation } from 'react-i18next';
 
 // 用户类型
 interface User {
@@ -29,6 +30,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 // 认证提供者组件
 export function AuthProvider({ children }: { children: ReactNode }) {
+  const { t } = useTranslation();
   const [user, setUser] = useState<User | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
   const [isLoading, setIsLoading] = useState<boolean>(true);
@@ -46,7 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       webAuthnService.isPlatformAuthenticatorAvailable()
         .then(available => setIsPlatformAuthenticatorAvailable(available))
         .catch(error => {
-          console.error('检查平台认证器可用性失败:', error);
+          console.error('Failed to check platform authenticator availability:', error);
           setIsPlatformAuthenticatorAvailable(false);
         });
     }
@@ -68,7 +70,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           clearAuthState();
         });
       } catch (error) {
-        console.error('Failed to parse stored user:', error);
+        console.error(t('auth.parseUserError'), error);
         clearAuthState();
       }
     }
@@ -96,7 +98,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       return response.ok;
     } catch (error) {
-      console.error('Token validation failed:', error);
+      console.error(t('auth.tokenValidationFailed'), error);
       return false;
     }
   };
@@ -115,7 +117,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || '登录失败');
+        throw new Error(errorData.error || t('auth.loginFailed'));
       }
 
       const data = await response.json();
@@ -129,18 +131,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAuthenticated(true);
 
       notifications.show({
-        title: '登录成功',
-        message: `欢迎回来，${data.user.username}！`,
+        title: t('auth.loginSuccess'),
+        message: t('auth.welcomeBack', { username: data.user.username }),
         color: 'green',
       });
 
       return true;
     } catch (error) {
-      console.error('Login failed:', error);
+      console.error(t('auth.loginFailed'), error);
 
       notifications.show({
-        title: '登录失败',
-        message: error instanceof Error ? error.message : '用户名或密码错误',
+        title: t('auth.loginFailed'),
+        message: error instanceof Error ? error.message : t('auth.loginError'),
         color: 'red',
       });
 
@@ -162,7 +164,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.error || '注册失败');
+        throw new Error(errorData.error || t('auth.registerFailed'));
       }
 
       const data = await response.json();
@@ -176,8 +178,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAuthenticated(true);
 
       notifications.show({
-        title: '注册成功',
-        message: '您的账户已成功创建',
+        title: t('auth.registerSuccess'),
+        message: t('auth.accountCreated'),
         color: 'green',
       });
 
@@ -186,8 +188,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('Registration failed:', error);
 
       notifications.show({
-        title: '注册失败',
-        message: error instanceof Error ? error.message : '注册过程中出现错误',
+        title: t('auth.registerFailed'),
+        message: error instanceof Error ? error.message : t('auth.registerError'),
         color: 'red',
       });
 
@@ -213,8 +215,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearAuthState();
 
       notifications.show({
-        title: '已登出',
-        message: '您已成功退出登录',
+        title: t('auth.loggedOut'),
+        message: t('auth.logoutSuccess'),
         color: 'blue',
       });
     }
@@ -231,8 +233,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       await webAuthnService.registerWebAuthn(username);
 
       notifications.show({
-        title: 'WebAuthn注册成功',
-        message: '您现在可以使用生物识别或安全密钥登录',
+        title: t('WebAuthnCredentials.registrationComplete'),
+        message: t('WebAuthnCredentials.registrationSuccess'),
         color: 'green',
       });
 
@@ -241,8 +243,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('WebAuthn registration failed:', error);
 
       notifications.show({
-        title: 'WebAuthn注册失败',
-        message: error instanceof Error ? error.message : 'WebAuthn注册过程中出现错误',
+        title: t('WebAuthnCredentials.registrationFailed'),
+        message: error instanceof Error ? error.message : t('settings.webauthn.registrationError'),
         color: 'red',
       });
 
@@ -269,8 +271,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       setIsAuthenticated(true);
 
       notifications.show({
-        title: 'WebAuthn登录成功',
-        message: `欢迎回来，${data.user.username}！`,
+        title: t('auth.loginSuccess'),
+        message: t('auth.welcomeBack', { username: data.user.username }),
         color: 'green',
       });
 
@@ -279,8 +281,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('WebAuthn login failed:', error);
 
       notifications.show({
-        title: 'WebAuthn登录失败',
-        message: error instanceof Error ? error.message : 'WebAuthn登录过程中出现错误',
+        title: t('WebAuthnCredentials.registrationFailed'),
+        message: error instanceof Error ? error.message : t('settings.webauthn.loginError'),
         color: 'red',
       });
 

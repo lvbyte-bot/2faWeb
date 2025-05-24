@@ -1,6 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { Box, Text, Stack, Group, ThemeIcon } from '@mantine/core';
 import { IconFingerprint, IconDevices, IconLock, IconDownload } from '@tabler/icons-react';
+import { useTranslation } from 'react-i18next';
 
 interface NavItemProps {
   to: string;
@@ -32,47 +33,48 @@ const NavItem = ({ to, label, icon }: NavItemProps) => (
 
 // 导航菜单组件
 export default function NavMenu() {
+  const { t } = useTranslation();
   return (
     <Box>
       <Stack gap="xs">
         <NavItem
           to="/"
-          label="仪表盘"
+          label={t('dashboard.title')}
           icon={<span>📊</span>}
         />
         <NavItem
           to="/accounts"
-          label="账户管理"
+          label={t('accounts.title')}
           icon={<span>🔑</span>}
         />
         <NavItem
           to="/import-export"
-          label="导入/导出"
+          label={t('importExport.title')}
           icon={<span>📤</span>}
         />
         <NavItem
           to="/settings"
-          label="设置"
+          label={t('settings.title')}
           icon={<span>⚙️</span>}
         />
         <NavItem
           to="/webauthn"
-          label="生物识别登录"
+          label={t('webauthn.title')}
           icon={<IconFingerprint size={16} />}
         />
         <NavItem
           to="/sessions"
-          label="会话管理"
+          label={t('sessions.title')}
           icon={<IconDevices size={16} />}
         />
         <NavItem
           to="/encryption"
-          label="端到端加密"
+          label={t('encryption.title')}
           icon={<IconLock size={16} />}
         />
         <NavItem
           to="/backup"
-          label="备份与恢复"
+          label={t('backup.title')}
           icon={<IconDownload size={16} />}
         />
       </Stack>

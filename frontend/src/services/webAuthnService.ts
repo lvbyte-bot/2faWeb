@@ -8,6 +8,18 @@ import type {
   AuthenticationResponseJSON,
 } from '@simplewebauthn/types';
 
+// 定义错误消息常量
+const ERROR_MESSAGES = {
+  FETCH_OPTIONS_FAILED: 'Failed to fetch registration options',
+  VERIFY_RESPONSE_FAILED: 'Failed to verify registration response',
+  FETCH_LOGIN_OPTIONS_FAILED: 'Failed to fetch login options',
+  VERIFY_LOGIN_FAILED: 'Failed to verify login response',
+  PLATFORM_CHECK_FAILED: 'Failed to check platform authenticator availability',
+  FETCH_CREDENTIALS_FAILED: 'Failed to fetch credentials list',
+  UPDATE_NAME_FAILED: 'Failed to update credential name',
+  DELETE_CREDENTIAL_FAILED: 'Failed to delete credential'
+};
+
 /**
  * 开始WebAuthn注册流程
  * @param username 用户名
@@ -20,7 +32,7 @@ export async function registerWebAuthn(username: string): Promise<{ credentialID
     const options = await optionsResponse.json();
 
     if (!options || optionsResponse.status !== 200) {
-      throw new Error(options.error || '获取注册选项失败');
+      throw new Error(options.error || ERROR_MESSAGES.FETCH_OPTIONS_FAILED);
     }
 
     // 2. 使用浏览器API开始注册
@@ -33,12 +45,12 @@ export async function registerWebAuthn(username: string): Promise<{ credentialID
     const verification = await verificationResponse.json();
 
     if (!verification || verificationResponse.status !== 200) {
-      throw new Error(verification.error || '验证注册响应失败');
+      throw new Error(verification.error || ERROR_MESSAGES.VERIFY_RESPONSE_FAILED);
     }
 
     return verification;
   } catch (error) {
-    console.error('WebAuthn注册失败:', error);
+    console.error('WebAuthn registration failed:', error);
     throw error;
   }
 }
@@ -58,7 +70,7 @@ export async function loginWithWebAuthn(username?: string): Promise<{
     const options = await optionsResponse.json();
 
     if (!options || optionsResponse.status !== 200) {
-      throw new Error(options.error || '获取登录选项失败');
+      throw new Error(options.error || ERROR_MESSAGES.FETCH_LOGIN_OPTIONS_FAILED);
     }
 
     // 2. 使用浏览器API开始认证
@@ -71,12 +83,12 @@ export async function loginWithWebAuthn(username?: string): Promise<{
     const verification = await verificationResponse.json();
 
     if (!verification || verificationResponse.status !== 200) {
-      throw new Error(verification.error || '验证登录响应失败');
+      throw new Error(verification.error || ERROR_MESSAGES.VERIFY_LOGIN_FAILED);
     }
 
     return verification;
   } catch (error) {
-    console.error('WebAuthn登录失败:', error);
+    console.error('WebAuthn login failed:', error);
     throw error;
   }
 }
@@ -104,7 +116,7 @@ export async function isPlatformAuthenticatorAvailable(): Promise<boolean> {
   try {
     return await window.PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable();
   } catch (error) {
-    console.error('检查平台认证器可用性失败:', error);
+    console.error(ERROR_MESSAGES.PLATFORM_CHECK_FAILED, error);
     return false;
   }
 }
@@ -130,12 +142,12 @@ export async function getCredentials(): Promise<WebAuthnCredential[]> {
     const data = await response.json();
 
     if (!data || response.status !== 200) {
-      throw new Error(data.error || '获取凭证列表失败');
+      throw new Error(data.error || ERROR_MESSAGES.FETCH_CREDENTIALS_FAILED);
     }
 
     return data.credentials;
   } catch (error) {
-    console.error('获取WebAuthn凭证列表失败:', error);
+    console.error('Failed to fetch WebAuthn credentials list:', error);
     throw error;
   }
 }
@@ -152,12 +164,12 @@ export async function updateCredentialName(id: string, name: string): Promise<We
     const data = await response.json();
 
     if (!data || response.status !== 200) {
-      throw new Error(data.error || '更新凭证名称失败');
+      throw new Error(data.error || ERROR_MESSAGES.UPDATE_NAME_FAILED);
     }
 
     return data.credential;
   } catch (error) {
-    console.error('更新WebAuthn凭证名称失败:', error);
+    console.error('Failed to update WebAuthn credential name:', error);
     throw error;
   }
 }
@@ -173,12 +185,12 @@ export async function deleteCredential(id: string): Promise<boolean> {
     const data = await response.json();
 
     if (!data || response.status !== 200) {
-      throw new Error(data.error || '删除凭证失败');
+      throw new Error(data.error || ERROR_MESSAGES.DELETE_CREDENTIAL_FAILED);
     }
 
     return true;
   } catch (error) {
-    console.error('删除WebAuthn凭证失败:', error);
+    console.error('Failed to delete WebAuthn credential:', error);
     throw error;
   }
 }

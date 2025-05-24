@@ -22,8 +22,10 @@ import { useDisclosure } from '@mantine/hooks';
 import * as keyManagement from '../services/keyManagementService';
 import * as cryptoUtils from '../utils/crypto';
 import { useAccounts } from '../contexts/AccountContext';
+import { useTranslation } from 'react-i18next';
 
 export default function EncryptionSettings() {
+  const { t } = useTranslation();
   // 状态
   const [encryptionEnabled, setEncryptionEnabled] = useState(false);
   const [encryptionActive, setEncryptionActive] = useState(false);
@@ -74,8 +76,8 @@ export default function EncryptionSettings() {
   const handleSetupEncryption = async () => {
     if (masterPassword !== confirmPassword) {
       notifications.show({
-        title: '错误',
-        message: '密码不匹配',
+        title: t('common.error'),
+        message: t('auth.passwordMismatch'),
         color: 'red',
       });
       return;
@@ -83,8 +85,8 @@ export default function EncryptionSettings() {
 
     if (passwordStrength.score < 50) {
       notifications.show({
-        title: '警告',
-        message: '密码强度不足，建议使用更强的密码',
+        title: t('common.warning'),
+        message: t('encryption.weakPasswordWarning'),
         color: 'yellow',
       });
       return;
@@ -97,8 +99,8 @@ export default function EncryptionSettings() {
 
       if (success) {
         notifications.show({
-          title: '成功',
-          message: '加密已设置',
+          title: t('common.success'),
+          message: t('encryption.setupSuccess'),
           color: 'green',
         });
 
@@ -114,16 +116,16 @@ export default function EncryptionSettings() {
         setSetupStep(0);
       } else {
         notifications.show({
-          title: '错误',
-          message: '设置加密失败',
+          title: t('common.error'),
+          message: t('encryption.setupFailed'),
           color: 'red',
         });
       }
     } catch (error) {
       console.error('设置加密失败:', error);
       notifications.show({
-        title: '错误',
-        message: '设置加密失败',
+        title: t('common.error'),
+        message: t('encryption.setupFailed'),
         color: 'red',
       });
     } finally {
@@ -140,8 +142,8 @@ export default function EncryptionSettings() {
 
       if (success) {
         notifications.show({
-          title: '成功',
-          message: '加密已解锁',
+          title: t('common.success'),
+          message: t('encryption.unlockSuccess'),
           color: 'green',
         });
 
@@ -152,16 +154,16 @@ export default function EncryptionSettings() {
         await syncData();
       } else {
         notifications.show({
-          title: '错误',
-          message: '密码错误',
+          title: t('common.error'),
+          message: t('encryption.wrongPassword'),
           color: 'red',
         });
       }
     } catch (error) {
       console.error('解锁加密失败:', error);
       notifications.show({
-        title: '错误',
-        message: '解锁加密失败',
+        title: t('common.error'),
+        message: t('encryption.unlockFailed'),
         color: 'red',
       });
     } finally {
@@ -174,8 +176,8 @@ export default function EncryptionSettings() {
     keyManagement.lockEncryption();
     setEncryptionActive(false);
     notifications.show({
-      title: '成功',
-      message: '加密已锁定',
+      title: t('common.success'),
+      message: t('encryption.lockSuccess'),
       color: 'blue',
     });
   };
@@ -184,8 +186,8 @@ export default function EncryptionSettings() {
   const handleChangePassword = async () => {
     if (newPassword !== confirmNewPassword) {
       notifications.show({
-        title: '错误',
-        message: '新密码不匹配',
+        title: t('common.error'),
+        message: t('auth.passwordMismatch'),
         color: 'red',
       });
       return;
@@ -194,8 +196,8 @@ export default function EncryptionSettings() {
     const strength = cryptoUtils.checkPasswordStrength(newPassword);
     if (strength.score < 50) {
       notifications.show({
-        title: '警告',
-        message: '新密码强度不足，建议使用更强的密码',
+        title: t('common.warning'),
+        message: t('encryption.weakPasswordWarning'),
         color: 'yellow',
       });
       return;
@@ -208,8 +210,8 @@ export default function EncryptionSettings() {
 
       if (success) {
         notifications.show({
-          title: '成功',
-          message: '密码已更改',
+          title: t('common.success'),
+          message: t('encryption.passwordChanged'),
           color: 'green',
         });
 
@@ -220,16 +222,16 @@ export default function EncryptionSettings() {
         close();
       } else {
         notifications.show({
-          title: '错误',
-          message: '当前密码错误',
+          title: t('common.error'),
+          message: t('encryption.currentPasswordWrong'),
           color: 'red',
         });
       }
     } catch (error) {
       console.error('更改密码失败:', error);
       notifications.show({
-        title: '错误',
-        message: '更改密码失败',
+        title: t('common.error'),
+        message: t('encryption.changePasswordFailed'),
         color: 'red',
       });
     } finally {
@@ -239,7 +241,7 @@ export default function EncryptionSettings() {
 
   // 禁用加密
   const handleDisableEncryption = async () => {
-    if (!window.confirm('确定要禁用加密吗？这将使您的数据不再受到保护。')) {
+    if (!window.confirm(t('encryption.disableConfirmation'))) {
       return;
     }
 
@@ -250,8 +252,8 @@ export default function EncryptionSettings() {
 
       if (success) {
         notifications.show({
-          title: '成功',
-          message: '加密已禁用',
+          title: t('common.success'),
+          message: t('encryption.disableSuccess'),
           color: 'yellow',
         });
 
@@ -263,16 +265,16 @@ export default function EncryptionSettings() {
         await syncData();
       } else {
         notifications.show({
-          title: '错误',
-          message: '密码错误',
+          title: t('common.error'),
+          message: t('encryption.wrongPassword'),
           color: 'red',
         });
       }
     } catch (error) {
       console.error('禁用加密失败:', error);
       notifications.show({
-        title: '错误',
-        message: '禁用加密失败',
+        title: t('common.error'),
+        message: t('encryption.disableFailed'),
         color: 'red',
       });
     } finally {
@@ -283,29 +285,29 @@ export default function EncryptionSettings() {
   return (
     <Container size="md" py="xl">
       <Title order={2} mb="md">
-        加密设置
+        {t('encryption.title')}
       </Title>
 
       <Text c="dimmed" mb="xl">
-        管理端到端加密设置，保护您的敏感数据
+        {t('encryption.description')}
       </Text>
 
       {encryptionEnabled ? (
         <Paper withBorder p="md" radius="md" mb="md">
           <Stack>
             <Group justify="space-between">
-              <Text fw={500}>端到端加密</Text>
-              <Text color="green">已启用</Text>
+              <Text fw={500}>{t('encryption.e2eEncryption')}</Text>
+              <Text color="green">{t('encryption.enabled')}</Text>
             </Group>
 
             <Text size="sm" c="dimmed">
-              您的数据在发送到服务器之前已加密，只有您知道解密密钥。
+              {t('encryption.dataProtectionDesc')}
             </Text>
 
             <Group justify="space-between">
-              <Text fw={500}>加密状态</Text>
+              <Text fw={500}>{t('encryption.encryptionStatus')}</Text>
               <Text color={encryptionActive ? 'green' : 'yellow'}>
-                {encryptionActive ? '已解锁' : '已锁定'}
+                {encryptionActive ? t('encryption.unlocked') : t('encryption.locked')}
               </Text>
             </Group>
 
@@ -313,13 +315,13 @@ export default function EncryptionSettings() {
 
             {encryptionActive ? (
               <Button color="blue" onClick={handleLockEncryption}>
-                锁定加密
+                {t('encryption.lockEncryption')}
               </Button>
             ) : (
               <Stack>
                 <PasswordInput
-                  label="主密码"
-                  placeholder="输入您的主密码"
+                  label={t('encryption.masterPassword')}
+                  placeholder={t('encryption.enterMasterPassword')}
                   value={currentPassword}
                   onChange={(e) => setCurrentPassword(e.currentTarget.value)}
                 />
@@ -329,7 +331,7 @@ export default function EncryptionSettings() {
                   loading={isLoading}
                   disabled={!currentPassword}
                 >
-                  解锁加密
+                  {t('encryption.unlockEncryption')}
                 </Button>
               </Stack>
             )}
@@ -338,7 +340,7 @@ export default function EncryptionSettings() {
 
             <Group justify="space-between">
               <Button variant="outline" color="blue" onClick={open}>
-                更改主密码
+                {t('encryption.changeMasterPassword')}
               </Button>
               <Button
                 variant="outline"
@@ -346,7 +348,7 @@ export default function EncryptionSettings() {
                 onClick={handleDisableEncryption}
                 disabled={!encryptionActive}
               >
-                禁用加密
+                {t('encryption.disableEncryption')}
               </Button>
             </Group>
           </Stack>
@@ -354,17 +356,17 @@ export default function EncryptionSettings() {
       ) : (
         <Paper withBorder p="md" radius="md" mb="md">
           <Stack>
-            <Alert color="yellow" title="加密未启用">
-              启用端到端加密可以保护您的敏感数据，即使在服务器上也是加密的。
+            <Alert color="yellow" title={t('encryption.notEnabled')}>
+              {t('encryption.enablePrompt')}
             </Alert>
 
             <Stepper active={setupStep} onStepClick={setSetupStep}>
-              <Stepper.Step label="设置密码" description="创建主密码">
+              <Stepper.Step label={t('encryption.setupPassword')} description={t('encryption.createMasterPassword')}>
                 <Stack mt="md">
                   <PasswordInput
-                    label="主密码"
-                    placeholder="输入主密码"
-                    description="这个密码将用于加密您的数据，请确保它足够强且您能记住"
+                    label={t('encryption.masterPassword')}
+                    placeholder={t('encryption.enterMasterPassword')}
+                    description={t('encryption.passwordDescription')}
                     value={masterPassword}
                     onChange={(e) => setMasterPassword(e.currentTarget.value)}
                   />
@@ -383,13 +385,13 @@ export default function EncryptionSettings() {
                   )}
 
                   <PasswordInput
-                    label="确认密码"
-                    placeholder="再次输入密码"
+                    label={t('encryption.confirmPassword')}
+                    placeholder={t('encryption.reenterPassword')}
                     value={confirmPassword}
                     onChange={(e) => setConfirmPassword(e.currentTarget.value)}
                     error={
                       confirmPassword && masterPassword !== confirmPassword
-                        ? '密码不匹配'
+                        ? t('auth.passwordMismatch')
                         : null
                     }
                   />
@@ -402,32 +404,32 @@ export default function EncryptionSettings() {
                       passwordStrength.score < 30
                     }
                   >
-                    下一步
+                    {t('common.nextStep')}
                   </Button>
                 </Stack>
               </Stepper.Step>
 
-              <Stepper.Step label="确认" description="确认设置">
+              <Stepper.Step label={t('common.confirm')} description={t('encryption.confirmSetup')}>
                 <Stack mt="md">
-                  <Alert color="blue" title="重要提示">
-                    <Text>请记住以下几点：</Text>
+                  <Alert color="blue" title={t('encryption.importantNote')}>
+                    <Text>{t('encryption.rememberPoints')}</Text>
                     <List>
-                      <List.Item>如果您忘记了主密码，将无法恢复您的数据</List.Item>
-                      <List.Item>密码不会存储在服务器上，只有您知道</List.Item>
-                      <List.Item>每次打开应用时，您都需要输入主密码来解锁数据</List.Item>
+                      <List.Item>{t('encryption.forgotPasswordWarning')}</List.Item>
+                      <List.Item>{t('encryption.passwordNotStored')}</List.Item>
+                      <List.Item>{t('encryption.passwordNeededEachTime')}</List.Item>
                     </List>
                   </Alert>
 
                   <Group justify="space-between">
                     <Button variant="outline" onClick={() => setSetupStep(0)}>
-                      返回
+                      {t('common.back')}
                     </Button>
                     <Button
                       color="green"
                       onClick={handleSetupEncryption}
                       loading={isLoading}
                     >
-                      启用加密
+                      {t('encryption.enableEncryption')}
                     </Button>
                   </Group>
                 </Stack>
@@ -437,18 +439,18 @@ export default function EncryptionSettings() {
         </Paper>
       )}
 
-      <Modal opened={opened} onClose={close} title="更改主密码">
+      <Modal opened={opened} onClose={close} title={t('encryption.changeMasterPassword')}>
         <Stack>
           <PasswordInput
-            label="当前密码"
-            placeholder="输入当前密码"
+            label={t('encryption.currentPassword')}
+            placeholder={t('encryption.enterCurrentPassword')}
             value={currentPassword}
             onChange={(e) => setCurrentPassword(e.currentTarget.value)}
           />
 
           <PasswordInput
-            label="新密码"
-            placeholder="输入新密码"
+            label={t('encryption.newPassword')}
+            placeholder={t('encryption.enterNewPassword')}
             value={newPassword}
             onChange={(e) => setNewPassword(e.currentTarget.value)}
           />
@@ -474,20 +476,20 @@ export default function EncryptionSettings() {
           )}
 
           <PasswordInput
-            label="确认新密码"
-            placeholder="再次输入新密码"
+            label={t('encryption.confirmNewPassword')}
+            placeholder={t('encryption.reenterNewPassword')}
             value={confirmNewPassword}
             onChange={(e) => setConfirmNewPassword(e.currentTarget.value)}
             error={
               confirmNewPassword && newPassword !== confirmNewPassword
-                ? '密码不匹配'
+                ? t('auth.passwordMismatch')
                 : null
             }
           />
 
           <Group justify="flex-end">
             <Button variant="outline" onClick={close}>
-              取消
+              {t('common.cancel')}
             </Button>
             <Button
               color="blue"
@@ -500,7 +502,7 @@ export default function EncryptionSettings() {
                 cryptoUtils.checkPasswordStrength(newPassword).score < 30
               }
             >
-              更改密码
+              {t('encryption.changePassword')}
             </Button>
           </Group>
         </Stack>
