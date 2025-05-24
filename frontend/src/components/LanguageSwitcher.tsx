@@ -5,7 +5,8 @@ import { useState, useEffect } from 'react';
 // 支持的语言列表
 const LANGUAGES = [
   { value: 'zh-CN', label: '中文' },
-  { value: 'en-US', label: 'English' }
+  { value: 'en-US', label: 'English' },
+  { value: 'ja-JP', label: '日本語' }
 ];
 
 const LanguageSwitcher = () => {

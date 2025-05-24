@@ -5,6 +5,7 @@ import LanguageDetector from 'i18next-browser-languagedetector';
 // 导入语言文件
 import zhCN from './locales/zh-CN.json';
 import enUS from './locales/en-US.json';
+import jaJP from './locales/ja-JP.json';
 
 // 配置i18next
 i18n
@@ -19,6 +20,9 @@ i18n
       },
       'en-US': {
         translation: enUS
+      },
+      'ja-JP': {
+        translation: jaJP
       }
     },
     fallbackLng: 'en-US',
