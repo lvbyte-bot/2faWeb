@@ -43,6 +43,18 @@ function getAuthHeaders(): HeadersInit {
 // 处理 API 响应
 async function handleResponse<T>(response: Response): Promise<T> {
   if (!response.ok) {
+    // 检查是否是未授权错误(401)
+    if (response.status === 401) {
+      console.warn('会话已过期或无效，需要重新登录');
+      // 清除本地存储的登录状态
+      localStorage.removeItem('token');
+      localStorage.removeItem('user');
+      // 重定向到登录页面
+      window.location.href = '/login';
+      // 抛出错误，但由于已经重定向，这个错误通常不会被处理
+      throw new Error('会话已过期或无效，请重新登录');
+    }
+    
     try {
       const errorData = await response.json().catch(() => ({}));
       const errorMessage = errorData.error || errorData.message || `API 请求失败: ${response.status}`;

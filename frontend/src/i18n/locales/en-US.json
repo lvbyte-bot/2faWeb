@@ -475,6 +475,7 @@
     "generic": "An error occurred, please try again later",
     "network": "Network error, please check your connection",
     "unauthorized": "Unauthorized, please log in again",
+    "Unauthorized": "Session expired or invalid",
     "forbidden": "You don't have permission to perform this action",
     "notFound": "The requested resource was not found",
     "serverError": "Server error, please try again later",

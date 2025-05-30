@@ -468,6 +468,7 @@
     "generic": "发生错误，请稍后重试",
     "network": "网络错误，请检查您的连接",
     "unauthorized": "未授权，请重新登录",
+    "Unauthorized": "会话已过期或无效",
     "forbidden": "您没有权限执行此操作",
     "notFound": "请求的资源不存在",
     "serverError": "服务器错误，请稍后重试",
