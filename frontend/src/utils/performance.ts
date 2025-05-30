@@ -63,8 +63,8 @@ export function endMark(id: string, name: string): void {
     duration,
   });
 
-  // 如果持续时间超过阈值，记录警告
-  if (duration > 100) {
+  // 只在开发环境下显示性能警告
+  if (duration > 100 && import.meta.env.DEV) {
     console.warn(`性能警告: ${name} 操作耗时 ${duration}ms`);
   }
 }
@@ -142,6 +142,11 @@ export function usePerformanceMonitoring(name: string): {
  * 打印性能报告
  */
 export function printPerformanceReport(): void {
+  // 只在开发环境下打印性能报告
+  if (!import.meta.env.DEV) {
+    return;
+  }
+  
   console.group('性能报告');
 
   Object.entries(performanceMarks).forEach(([name, marks]) => {
