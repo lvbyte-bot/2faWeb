@@ -26,6 +26,7 @@
     "password": "密码",
     "confirmPassword": "确认密码",
     "email": "电子邮箱",
+    "welcomeBack": "欢迎回来",
     "loginSuccess": "登录成功",
     "registerSuccess": "注册成功",
     "passwordResetSuccess": "密码重置成功",

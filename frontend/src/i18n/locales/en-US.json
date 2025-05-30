@@ -23,6 +23,7 @@
   "auth": {
     "login": "Login",
     "register": "Register",
+    "welcomeBack": "Welcome back",
     "forgotPassword": "Forgot Password?",
     "resetPassword": "Reset Password",
     "username": "Username",
