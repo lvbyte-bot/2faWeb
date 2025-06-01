@@ -1,10 +1,5 @@
 #!/bin/bash
 
-# 自定义域名设置 - 如果不想使用Cloudflare自动生成的域名，可以在这里设置自定义域名
-CUSTOM_API_URL="https://api.your-domain.com"  # 你的自定义API域名
-CUSTOM_FRONTEND_URL="https://app.your-domain.com"  # 你的自定义前端域名
-USE_CUSTOM_DOMAINS=false  # 设置为true使用自定义域名，false使用自动生成的域名
-
 # 颜色定义
 RED='\033[0;31m'
 GREEN='\033[0;32m'
@@ -207,29 +202,20 @@ deploy_api() {
   fi
 
   # 从输出中提取完整的URL
-  AUTO_API_URL=$(echo "$DEPLOY_OUTPUT" | grep -o "https://[a-zA-Z0-9.-]*.workers.dev" | tail -1)
+  API_URL=$(echo "$DEPLOY_OUTPUT" | grep -o "https://[a-zA-Z0-9.-]*.workers.dev" | tail -1)
 
   # 如果无法从部署输出获取URL，尝试其他方法
-  if [ -z "$AUTO_API_URL" ]; then
+  if [ -z "$API_URL" ]; then
     # 尝试从wrangler.toml获取
     WORKER_NAME=$(grep -o "name = \"[a-zA-Z0-9-]*\"" wrangler.toml | cut -d'"' -f2)
     ACCOUNT_ID=$(grep -o "account_id = \"[a-zA-Z0-9-]*\"" wrangler.toml | cut -d'"' -f2)
 
     if [ -n "$WORKER_NAME" ] && [ -n "$ACCOUNT_ID" ]; then
-      AUTO_API_URL="https://$WORKER_NAME.$ACCOUNT_ID.workers.dev"
+      API_URL="https://$WORKER_NAME.$ACCOUNT_ID.workers.dev"
     else
       # 最后的备用选项
-      AUTO_API_URL="https://2fa-web-api.workers.dev"
+      API_URL="https://2fa-web-api.workers.dev"
     fi
-  fi
-  
-  # 使用自定义域名或自动生成的域名
-  if [ "$USE_CUSTOM_DOMAINS" = true ] && [ -n "$CUSTOM_API_URL" ]; then
-    print_info "使用自定义API域名: $CUSTOM_API_URL"
-    API_URL="$CUSTOM_API_URL"
-  else
-    API_URL="$AUTO_API_URL"
-    print_info "使用自动生成的API域名: $API_URL"
   fi
 
   cd ..
@@ -243,7 +229,7 @@ update_frontend_env() {
   print_info "更新前端环境变量..."
 
   # 创建.env.production文件
-  echo "VITE_API_URL=$API_URL" > frontend/.env.production
+  echo "VITE_API_URL=$API_URL/api" > frontend/.env.production
   echo "VITE_APP_NAME=2FA Web" >> frontend/.env.production
   echo "VITE_ENABLE_PERFORMANCE_MONITORING=false" >> frontend/.env.production
   echo "VITE_DEBUG_MODE=false" >> frontend/.env.production
@@ -291,23 +277,13 @@ deploy_frontend() {
   fi
 
   # 获取Pages URL
-  AUTO_FRONTEND_URL=$(wrangler pages deployment list --project-name=2fa-web | grep -o "https://[a-zA-Z0-9.-]*.pages.dev" | head -1 || echo "https://2fa-web.pages.dev")
+  PAGES_URL=$(wrangler pages deployment list --project-name=2fa-web | grep -o "https://[a-zA-Z0-9.-]*.pages.dev" | head -1 || echo "https://2fa-web.pages.dev")
 
-  # 使用自定义域名或自动生成的域名
-  if [ "$USE_CUSTOM_DOMAINS" = true ] && [ -n "$CUSTOM_FRONTEND_URL" ]; then
-    print_info "使用自定义前端域名: $CUSTOM_FRONTEND_URL"
-    FRONTEND_URL="$CUSTOM_FRONTEND_URL"
-  else
-    FRONTEND_URL="$AUTO_FRONTEND_URL"
-    print_info "使用自动生成的前端域名: $FRONTEND_URL"
-  fi
-
-  print_success "前端部署成功: $FRONTEND_URL"
+  print_success "前端部署成功: $PAGES_URL"
 
   # 更新API的FRONTEND_URL
   print_info "更新API的FRONTEND_URL..."
-  sed -i "s|FRONTEND_URL = \"http://localhost:3000\"|FRONTEND_URL = \"$FRONTEND_URL\"|" api/wrangler.toml
-  sed -i "s|FRONTEND_URL = \"https://[a-zA-Z0-9.-]*.pages.dev\"|FRONTEND_URL = \"$FRONTEND_URL\"|" api/wrangler.toml
+  sed -i "s|FRONTEND_URL = \"http://localhost:3000\"|FRONTEND_URL = \"$PAGES_URL\"|" api/wrangler.toml
 
   # 重新部署API以更新FRONTEND_URL
   print_info "重新部署API以更新CORS设置..."
@@ -348,9 +324,8 @@ main() {
   # 部署前端
   deploy_frontend
 
-  # 部署完成
   print_success "部署完成！"
-  print_success "前端URL: $FRONTEND_URL"
+  print_success "前端URL: $PAGES_URL"
   print_success "API URL: $API_URL"
   print_info "请访问前端URL注册账户并开始使用应用"
 }
