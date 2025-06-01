@@ -31,6 +31,7 @@
     "confirmPassword": "Confirm Password",
     "email": "Email",
     "loginSuccess": "Login successful",
+    "loginFailed": "Login failed",
     "registerSuccess": "Registration successful",
     "passwordResetSuccess": "Password reset successful",
     "invalidCredentials": "Invalid username or password",

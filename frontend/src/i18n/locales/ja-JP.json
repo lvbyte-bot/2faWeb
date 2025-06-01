@@ -31,6 +31,7 @@
     "confirmPassword": "パスワード（確認）",
     "email": "メールアドレス",
     "loginSuccess": "ログインに成功しました",
+    "loginFailed": "ログインに失敗しました",
     "registerSuccess": "登録に成功しました",
     "passwordResetSuccess": "パスワードのリセットに成功しました",
     "invalidCredentials": "ユーザー名またはパスワードが無効です",

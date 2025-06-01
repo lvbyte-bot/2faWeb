@@ -28,6 +28,7 @@
     "email": "电子邮箱",
     "welcomeBack": "欢迎回来",
     "loginSuccess": "登录成功",
+    "loginFailed": "登录失败",
     "registerSuccess": "注册成功",
     "passwordResetSuccess": "密码重置成功",
     "invalidCredentials": "用户名或密码错误",
