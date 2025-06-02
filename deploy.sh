@@ -228,8 +228,24 @@ deploy_api() {
 update_frontend_env() {
   print_info "更新前端环境变量..."
 
+  # 询问用户是否要自定义API URL
+  print_info "当前 API URL 将被设置为: $API_URL/api"
+  read -p "$(echo -e "${YELLOW}是否要自定义 API URL? (y/n): ${NC}")" customize_url
+  
   # 创建.env.production文件
-  echo "VITE_API_URL=$API_URL/api" > frontend/.env.production
+  if [[ "$customize_url" =~ ^[Yy]$ ]]; then
+    read -p "$(echo -e "${BLUE}请输入自定义 API URL: ${NC}")" custom_api_url
+    if [[ -n "$custom_api_url" ]]; then
+      echo "VITE_API_URL=$custom_api_url" > frontend/.env.production
+      print_success "已设置自定义 API URL: $custom_api_url"
+    else
+      echo "VITE_API_URL=$API_URL/api" > frontend/.env.production
+      print_warning "未提供有效的 URL，使用默认值: $API_URL/api"
+    fi
+  else
+    echo "VITE_API_URL=$API_URL/api" > frontend/.env.production
+    print_info "使用默认 API URL: $API_URL/api"
+  fi
   echo "VITE_APP_NAME=2FA Web" >> frontend/.env.production
   echo "VITE_ENABLE_PERFORMANCE_MONITORING=false" >> frontend/.env.production
   echo "VITE_DEBUG_MODE=false" >> frontend/.env.production
