@@ -273,6 +273,7 @@
     "registrationComplete": "登録完了",
     "registrationSuccess": "資格情報が正常に登録されました",
     "registrationFailed": "登録失敗",
+    "loginFailed": "ログイン失敗",
     "retry": "再試行",
     "unknownError": "不明なエラーが発生しました",
     "registrationAborted": "ユーザーにより登録が中止されました"

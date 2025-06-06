@@ -273,6 +273,7 @@
     "registrationComplete": "Registration Complete",
     "registrationSuccess": "Credential registered successfully",
     "registrationFailed": "Registration Failed",
+    "loginFailed": "Login Failed",
     "retry": "Retry",
     "unknownError": "Unknown error occurred",
     "registrationAborted": "Registration aborted by user"

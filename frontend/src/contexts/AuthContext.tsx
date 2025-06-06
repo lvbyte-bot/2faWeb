@@ -281,7 +281,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       console.error('WebAuthn login failed:', error);
 
       notifications.show({
-        title: t('WebAuthnCredentials.registrationFailed'),
+        title: t('WebAuthnCredentials.loginFailed'),
         message: error instanceof Error ? error.message : t('settings.webauthn.loginError'),
         color: 'red',
       });

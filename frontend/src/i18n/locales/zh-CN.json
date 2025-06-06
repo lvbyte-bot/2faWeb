@@ -241,7 +241,14 @@
       "save": "保存",
       "deleteCredential": "删除凭证",
       "confirmDelete": "确认删除",
-      "confirmDeleteMessage": "您确定要删除凭证 \"{name}\" 吗？此操作不可撤销。"
+      "confirmDeleteMessage": "您确定要删除凭证 \"{name}\" 吗？此操作不可撤销。",
+      "registrationComplete": "注册完成",
+      "registrationSuccess": "凭证注册成功",
+      "registrationFailed": "注册失败",
+      "loginFailed": "登录失败",
+      "retry": "重试",
+      "unknownError": "发生未知错误",
+      "registrationAborted": "用户取消了注册"
     }
   },
   "importExport": {
