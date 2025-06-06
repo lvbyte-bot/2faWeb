@@ -54,3 +54,4 @@ tsconfig.tsbuildinfo
 .tmp/
 temp/
 tmp/
+api/wrangler.toml
